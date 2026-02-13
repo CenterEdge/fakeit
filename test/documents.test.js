@@ -1,4 +1,4 @@
-/* eslint-disable no-undefined */
+ 
 
 import {
   transformValueToType,
@@ -162,9 +162,9 @@ test.group('build', (test) => {
         }
         const result = await doc.build(obj);
         if (to.type(expected) === 'regexp') {
-          t.truthy(expected.test(result[0].__key)); // eslint-disable-line
+          t.truthy(expected.test(result[0].__key));  
         } else {
-          t.is(result[0].__key, expected); // eslint-disable-line
+          t.is(result[0].__key, expected);  
         }
       });
     });
@@ -238,7 +238,7 @@ test.group('build', (test) => {
                 extension: {
                   type: 'string',
                   data: {
-                    build(documents, globals, inputs, faker, chance) { // eslint-disable-line
+                    build(documents, globals, inputs, faker, chance) {  
                       return chance.bool({ likelihood: 20 }) ? chance.integer({ min: 1000, max: 9999 }).toString() : null;
                     },
                   },
@@ -319,7 +319,7 @@ test.group('runData', (test) => {
   test('function wasn\'t passed', (t) => {
     const tester = () => t.context.document.runData();
     t.notThrows(tester);
-    t.is(tester(), undefined); // eslint-disable-line
+    t.is(tester(), undefined);  
   });
 
   test('returns the context that\'s passed', (t) => {
@@ -436,7 +436,7 @@ test.group('buildObject', (test) => {
     const schema = is.object({
       phone: is.object({
         type: is.string(),
-        phone_number: is.string().regex(/\(333\) 333 \- 3333/),
+        phone_number: is.string().regex(/\(333\) 333 - 3333/),
       })
     });
 
@@ -878,14 +878,14 @@ test.group('postProcess', (test) => {
       nochanges: is.string().lowercase(),
       changes: is.string().uppercase(),
       emails: is.array()
-        .items(is.string().regex(/[A-Z]+\@example\.com/))
+        .items(is.string().regex(/[A-Z]+@example\.com/))
         .min(1)
         .max(4),
       phones: is.array()
         .items(is.object({
           type: is.string(),
           extension: is.string().regex(/10/),
-          phone_number: is.string().regex(/\(333\) 333 \- 3333/),
+          phone_number: is.string().regex(/\(333\) 333 - 3333/),
         }))
         .min(1)
         .max(4),
@@ -925,7 +925,7 @@ test.group('transformValueToType', (test) => {
       expected: null,
     },
     {
-      actual: [ 'number', undefined ], // eslint-disable-line
+      actual: [ 'number', undefined ],  
       expected: undefined,
     },
     {

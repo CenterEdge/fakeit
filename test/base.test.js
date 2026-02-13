@@ -1,4 +1,4 @@
-/* eslint-disable id-length, no-shadow */
+ 
 
 import { join as p } from 'path';
 import ava from 'ava-spec';

@@ -100,7 +100,7 @@ test.serial.group('log', (test) => {
     t.is(time.constructor.name, 'Logger');
     await delay(200);
     const end = t.context.log('timeEnd', 'woohoo');
-    const woohoo = parseFloat(end.match(/\+([0-9\.]+)/)[1]);
+    const woohoo = parseFloat(end.match(/\+([0-9.]+)/)[1]);
     t.truthy(woohoo > 190);
   });
 });
@@ -149,7 +149,7 @@ test.serial.group('time', (test) => {
         const actual = t.context.timeEnd(expected);
         t.truthy(actual);
         t.is(typeof actual, 'string');
-        const [ number, unit ] = stripColor(actual).trim().match(/\+?([0-9\.]+)\s*([µmsn]+)?/).slice(1);
+        const [ number, unit ] = stripColor(actual).trim().match(/\+?([0-9.]+)\s*([µmsn]+)?/).slice(1);
         if (number !== '0') {
           t.is(typeof unit, 'string');
           t.truthy([ 'µs', 'ns', 'ms', 's', ].includes(unit));

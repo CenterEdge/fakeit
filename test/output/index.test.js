@@ -1,4 +1,4 @@
-/* eslint-disable id-length, no-shadow, no-undefined */
+ 
 
 import Output, { validate, isServer, isString, output_types } from '../../dist/output/index';
 import ava from 'ava-spec';

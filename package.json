@@ -1,12 +1,14 @@
 {
-  "name": "fakeit",
+  "name": "@centeredge/fakeit",
   "author": "Aaron Benton <bentonam@gmail.com> (https://github.com/bentonam)",
   "contributors": [
-    "Tyler Benton <tjbenton21@gmail.com> (https://github.com/tjbenton)"
+    "Tyler Benton <tjbenton21@gmail.com> (https://github.com/tjbenton)",
+    "Brant Burnett <bburnett@centeredgesoftware.com> (https://github.com/brantburnett)"
   ],
-  "version": "1.4.0",
+  "version": "2.0.0",
   "description": "Command-line utility that generates fake data which can be output as JSON, YAML, CSON, or CSV formats based on models defined in YAML.",
   "scripts": {
+    "lint": "eslint",
     "test": "make test",
     "watch": "make build -- --watch"
   },
@@ -16,10 +18,10 @@
   "main": "dist/index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bentonam/fakeit.git"
+    "url": "git+https://github.com/centeredge/fakeit.git"
   },
   "bugs": {
-    "url": "https://github.com/bentonam/fakeit/issues"
+    "url": "https://github.com/centeredge/fakeit/issues"
   },
   "engines": {
     "node": ">=5"
@@ -42,7 +44,7 @@
     "sync-gateway"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/bentonam/fakeit#readme",
+  "homepage": "https://github.com/centeredge/fakeit#readme",
   "dependencies": {
     "adm-zip": "^0.4.7",
     "async-array-methods": "^2.1.0",
@@ -78,6 +80,7 @@
     "yamljs": "^0.2.8"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "ava": "^0.16.0",
     "ava-spec": "github:tjbenton/ava-spec",
     "babel-cli": "~6.22.2",
@@ -87,10 +90,11 @@
     "babel-preset-latest": "~6.22.0",
     "babel-preset-stage-0": "~6.22.0",
     "coveralls": "^2.11.15",
+    "eslint": "^10.0.0",
     "get-stream": "~3.0.0",
+    "globals": "^17.3.0",
     "joi": "~10.2.0",
     "jsondiffpatch": "~0.2.4",
-    "lint-rules": "github:ma-shop/lint-rules#v0.0.5",
     "nixt": "~0.5.0",
     "np": "~2.12.0",
     "nyc": "~10.1.2",

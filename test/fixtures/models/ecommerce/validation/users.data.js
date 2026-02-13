@@ -2,7 +2,7 @@ var utils = require('../../../../utils.js');
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/^user_[a-z0-9\-]+$/),
+  _id: is.string().regex(/^user_[a-z0-9-]+$/),
   doc_type: 'user',
   user_id: 1,
   first_name: is.string(),

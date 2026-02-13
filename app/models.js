@@ -70,7 +70,7 @@ export default class Models extends Base {
       .reduce((prev, next) => {
         try {
           return prev.concat(path.join(findRoot(next), babel_config));
-        } catch (e) {
+        } catch {
           return prev;
         }
       }, []);
@@ -329,7 +329,7 @@ export function parseModelFunctions(model, babel_config = {}) {
     }
 
     // create the main function that will be run.
-    /* eslint-disable indent */
+     
     fn = [
       `function ${name}(_documents, _globals, _inputs, _faker, _chance, _document_index, _require) {`,
         // indent each line and create a string
@@ -337,12 +337,14 @@ export function parseModelFunctions(model, babel_config = {}) {
         '  return __result.apply(this, [].slice.call(arguments));',
       '}'
     ].join('\n');
-    /* eslint-enable indent */
+     
 
     try {
-      set(model, function_path, new Function('require', 'process', `return ${fn}`)(require, process)); // eslint-disable-line no-new-func
+      set(model, function_path, new Function('require', 'process', `return ${fn}`)(require, process));  
     } catch (e) {
-      throw new Error(`Function Error in model '${model.name}', for property: ${function_path}, Reason: ${e.message}`);
+      throw new Error(`Function Error in model '${model.name}', for property: ${function_path}, Reason: ${e.message}`, {
+        cause: e,
+      });
     }
   });
 }
@@ -437,7 +439,7 @@ export function parseModelCount(model, count) {
 /// @arg {undefined, null, number, string} seed - The seed to override the model settings
 /// @note {2} - The resolved seed will either be null or a number since faker requires the seed to be a number
 export function parseModelSeed(model, seed) {
-  model.seed = !!seed ? seed : model.seed;
+  model.seed = seed ? seed : model.seed;
 
   if (typeof model.seed === 'string') {
     seed = '';

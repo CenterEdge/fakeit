@@ -1,4 +1,4 @@
-/* eslint-disable id-length, no-shadow */
+ 
 
 import Console from '../../dist/output/console';
 import default_options from '../../dist/output/default-options';
@@ -21,7 +21,7 @@ test('without args', (t) => {
 
 test('prepare', async (t) => {
   t.is(t.context.prepared, false);
-  t.is(t.context.preparing, undefined); // eslint-disable-line
+  t.is(t.context.preparing, undefined);  
   const preparing = t.context.prepare();
   t.is(typeof t.context.preparing.then, 'function');
   t.is(t.context.prepared, false);
@@ -31,7 +31,7 @@ test('prepare', async (t) => {
 
 test.serial('setup', async (t) => {
   t.is(t.context.prepared, false);
-  t.is(t.context.preparing, undefined); // eslint-disable-line
+  t.is(t.context.preparing, undefined);  
   const preparing = t.context.setup();
   t.is(typeof t.context.preparing.then, 'function');
   t.is(t.context.prepared, false);
@@ -115,7 +115,7 @@ test.group('output', (test) => {
     test(`${language}`, async (t) => {
       t.context.output_options.format = language;
       t.is(t.context.prepared, false);
-      t.is(t.context.preparing, undefined); // eslint-disable-line
+      t.is(t.context.preparing, undefined);  
       const actual = await t.context.output(null, data);
       t.is(t.context.prepared, true);
       t.not(actual.trim(), data);

@@ -28,7 +28,7 @@ test.group('console', (test) => {
     'created_on'
   ];
 
-  /* eslint-disable max-len */
+   
   const expected_abc_seed = {
     _id: 'contact_1d54ed12-b65a-5085-a895-5c8c626f0efb',
     doc_type: 'contact',
@@ -41,9 +41,9 @@ test.group('console', (test) => {
     notes: 'Ea debitis possimus non inventore inventore dignissimos id.',
     tags: [ 'Soap', 'Buckinghamshire', 'Chief', 'hacking', 'Generic' ]
   };
-  /* eslint-enable max-len */
+   
 
-  /* eslint-disable quotes */
+   
   test.cb("--count 1 'simple/models/*'", (t) => {
     bin.clone()
       .run("console --count 1 'simple/models/*'")
@@ -118,7 +118,7 @@ test.group('console', (test) => {
         stdout.details = _.omit(stdout.details, [ 'dob' ]);
 
         for (let key in stdout) {
-          if (stdout.hasOwnProperty(key)) {
+          if (Object.prototype.hasOwnProperty.call(stdout, key)) {
             const value = stdout[key];
             const not_expected = expected_abc_seed[key];
             // it's a different key so it should be different
@@ -129,12 +129,12 @@ test.group('console', (test) => {
       .end(t.end);
   });
 
-  /* eslint-enable quotes */
+   
 });
 
 
 test.group('directory|folder', (test) => {
-  /* eslint-disable quotes */
+   
   const root = p(__dirname, 'directory-cli-test');
   const base = nixt().cwd(root).base('../../bin/fakeit ');
   const expected_keys = [
@@ -178,31 +178,31 @@ test.group('directory|folder', (test) => {
   });
 
   test.after.always(() => fs.remove(root));
-  /* eslint-enable quotes */
+   
 });
 
 test.cb('throws error when something goes wrong', (t) => {
-  /* eslint-disable quotes */
+   
   bin.clone()
     .run(`folder 'error-test' 'simple/models/*' --count 1 --archive 'woohoo'`)
-    .stdout(/The archive file must have a file extention of \`\.zip\`/)
+    .stdout(/The archive file must have a file extention of `\.zip`/)
     .code(1)
     .end(t.end);
-  /* eslint-enable quotes */
+   
 });
 
 test.group('help', (test) => {
   test.cb('help as argument', (t) => {
     bin.clone()
       .run('help')
-      .stdout(/^\s*Usage: fakeit \[command\] \[\<file\|directory\|glob\> \.\.\.\]/)
+      .stdout(/^\s*Usage: fakeit \[command\] \[<file\|directory\|glob> \.\.\.\]/)
       .end(t.end);
   });
 
   test.cb('no arguments were passed', (t) => {
     bin.clone()
       .run('')
-      .stdout(/^\s*Usage: fakeit \[command\] \[\<file\|directory\|glob\> \.\.\.\]/)
+      .stdout(/^\s*Usage: fakeit \[command\] \[<file\|directory\|glob> \.\.\.\]/)
       .end(t.end);
   });
 

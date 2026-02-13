@@ -22,7 +22,7 @@ import { Readable, Writable } from 'stream';
 /// @name DocumentsStream
 /// @description This class is used to generate all the documents for the passed models
 export default class DocumentsStream extends Base {
-  constructor(options = {}, globals = {}, inputs = {}, output) { // eslint-disable-line max-params
+  constructor(options = {}, globals = {}, inputs = {}, output) {  
     super(options);
     this.options = to.extend({ count: 0 }, this.options);
     this.globals = globals;
@@ -82,7 +82,7 @@ export default class DocumentsStream extends Base {
         }
         this.push(next());
         if (current_model) {
-          // eslint-disable-next-line max-len
+           
           spinners[current_model.name].text = `${current_model.name} documents (${commaify(current_model_document.generated)} / ${commaify(current_model.data.count)})`;
           self.total += 1;
         }
@@ -101,7 +101,7 @@ export default class DocumentsStream extends Base {
           callback();
           return;
         }
-        self.output.outputter.bucket.upsert(chunk.__key, chunk, (err) => { // eslint-disable-line no-underscore-dangle
+        self.output.outputter.bucket.upsert(chunk.__key, chunk, (err) => {  
           callback(err); // notify that the data was processed regardlress of succes / failure
         });
       },
@@ -328,7 +328,7 @@ export class DocumentBuilder extends Base {
       // builds a simple array
       for (let i = 0; i < count; i++) {
         const result = this.buildValue(property.items, typeToValue(property.items.type), doc, index);
-        if (result !== undefined) { // eslint-disable-line no-undefined
+        if (result !== undefined) {  
           value.push(result);
         }
       }

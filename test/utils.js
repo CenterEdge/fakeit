@@ -1,5 +1,3 @@
-/* eslint-disable func-names, babel/object-shorthand */
-
 var joi = require('joi');
 var to = require('to-js');
 to = to.default;
@@ -103,7 +101,7 @@ module.exports.models = function(settings) {
       // loop over all the globs
       settings.modules.forEach(function(model) {
         // check if there's a matching test
-        const should_test = options.match === null ? true : !!to.flatten([ options.match ]).map(function(item) { // eslint-disable-line
+        const should_test = options.match === null ? true : !!to.flatten([ options.match ]).map(function(item) {  
           if (typeof item === 'number') {
             item = settings.modules[item];
           }
@@ -119,18 +117,18 @@ module.exports.models = function(settings) {
           // get the schema to use for validating that the output is correct
           try {
             schemas[model] = schema = schemas[model] || require(p(settings.root, settings.validation(model)));
-          } catch (e) {
+          } catch {
             schemas[model] = schema = {};
           }
 
-          // eslint-disable-next-line no-underscore-dangle
+           
           const schema_keys = schema.isJoi ? _.map(schema._inner.children, 'key') : to.keys(schema);
 
           if (model.indexOf('flight-data') >= 0) {
             test = test.serial;
           }
 
-          test(model, function(t) { // eslint-disable-line
+          test(model, function(t) {  
             // run the call back with the `t` assertion object and the current model
             var result = cb(t, model);
 
@@ -224,7 +222,7 @@ module.exports.models = function(settings) {
   };
 
   models.todo = function() {
-    for (var schema in models.schemas_todo) { // eslint-disable-line
+    for (var schema in models.schemas_todo) {  
       for (var i = 0; i < models.schemas_todo[schema].length; i++) {
         console.log(chalk.blue('  -', schema + ':', models.schemas_todo[schema][i]).toString());
       }
@@ -271,10 +269,10 @@ module.exports.checkDiff = function checkDiff(actual, expected) {
 };
 
 /* istanbul ignore next: testing util */
-module.exports.phone = joi.string().regex(/[0-9\(\)\-\s\.]+/);
+module.exports.phone = joi.string().regex(/[0-9()\-\s.]+/);
 
 /* istanbul ignore next: testing util */
-module.exports.postal_code = joi.string().regex(/^[0-9]{5}(?:\-[0-9]{4})?$/).min(5).max(10);
+module.exports.postal_code = joi.string().regex(/^[0-9]{5}(?:-[0-9]{4})?$/).min(5).max(10);
 
 /* istanbul ignore next: testing util */
 module.exports.slug = joi.string().regex(/^[a-z][a-z-]+[a-z]$/);

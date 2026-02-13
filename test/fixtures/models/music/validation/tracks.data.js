@@ -9,7 +9,7 @@ module.exports = is.object({
   artist: is.string(),
   title: is.string(),
   mp3: is.string().uri().regex(/.*\/(?:files|audio|mp3|downloads)\/.+\.mp3$/),
-  genre: is.string().regex(/^[\–\-a-zA-Z\/'&\s28:,éí]+$/).min(3).max(39),
+  genre: is.string().regex(/^[–\-a-zA-Z/'&\s28:,éí]+$/).min(3).max(39),
   ratings: is.array()
     .items({
       created: is.date().iso(),

@@ -43,7 +43,7 @@ export function objectSearch(data, pattern, current_path, paths = []) {
     data !== null
   ) {
     for (let key in data) {
-      if (data.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
         const test_path = appendPath(current_path, key);
         if (
           test_path.match(pattern) &&
@@ -71,7 +71,7 @@ export async function findFiles(globs) {
     const to_search = [];
     list = to.flatten(list);
     for (let item of list) {
-      if (!!path.extname(item)) {
+      if (path.extname(item)) {
         files.push(item);
       } else {
         to_search.push(item);
@@ -84,7 +84,7 @@ export async function findFiles(globs) {
     items = sort(await map(items, (item) => {
       if (globby.hasMagic(item)) {
         return globby(item);
-      } else if (!!path.extname(item)) {
+      } else if (path.extname(item)) {
         return item;
       }
 
@@ -131,7 +131,7 @@ export async function readFiles(files) {
       const zip = new AdmZip(file);
       return map(zip.getEntries(), async (entry) => {
         if (!entry.isDirectory && !entry.entryName.match(/^(\.|__MACOSX)/)) {
-          let file_info = path.parse(entry.entryName); // eslint-disable-line
+          let file_info = path.parse(entry.entryName);  
           file_info.path = entry.entryName;
           file_info.content = await zip.readAsText(entry.entryName);
           return file_info;
@@ -285,8 +285,8 @@ parsers.csv = {
         return a;
       }
 
-      for (let k in b) { // eslint-disable-line
-        if (b.hasOwnProperty(k)) {
+      for (let k in b) {  
+        if (Object.prototype.hasOwnProperty.call(b, k)) {
           /* istanbul ignore if : too hard to create a test case for it */
           if (is.plainObject(b[k])) {
             a[k] = is.plainObject(a[k]) ? fix(a[k], b[k]) : b[k];

@@ -1,4 +1,4 @@
-/* eslint-disable id-length, no-shadow */
+ 
 
 import Folder from '../../dist/output/folder';
 import { join as p } from 'path';
@@ -27,7 +27,7 @@ test('without args', (t) => {
 
 test('prepare', async (t) => {
   t.is(t.context.prepared, false);
-  t.is(t.context.preparing, undefined); // eslint-disable-line
+  t.is(t.context.preparing, undefined);  
   const preparing = t.context.prepare();
   t.is(typeof t.context.preparing.then, 'function');
   t.is(t.context.prepared, false);
@@ -37,7 +37,7 @@ test('prepare', async (t) => {
 
 test('setup', async (t) => {
   t.is(t.context.prepared, false);
-  t.is(t.context.preparing, undefined); // eslint-disable-line
+  t.is(t.context.preparing, undefined);  
   const preparing = t.context.setup();
   t.is(typeof t.context.preparing.then, 'function');
   t.is(t.context.prepared, false);
@@ -122,7 +122,7 @@ test.serial.group('output', (test) => {
       const id = '1234567890';
       t.context.output_options.format = language;
       t.is(t.context.prepared, false);
-      t.is(t.context.preparing, undefined); // eslint-disable-line
+      t.is(t.context.preparing, undefined);  
 
       await t.context.output(id, data);
       t.is(t.context.prepared, true);

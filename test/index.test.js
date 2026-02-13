@@ -61,7 +61,7 @@ generate('generate no models', async (t) => {
   try {
     await t.context.fakeit.generate();
     t.pass();
-  } catch (e) {
+  } catch {
     t.fail();
   }
 });

@@ -1,4 +1,4 @@
-/* eslint-disable id-length, no-shadow */
+ 
 
 import Zip from '../../dist/output/zip';
 import { join as p } from 'path';
@@ -13,7 +13,7 @@ fs.exists = async (str) => {
   try {
     await fs.stat(str);
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -34,7 +34,7 @@ test('without args', (t) => {
 
 test('prepare', async (t) => {
   t.is(t.context.prepared, false);
-  t.is(t.context.preparing, undefined); // eslint-disable-line
+  t.is(t.context.preparing, undefined);  
   const preparing = t.context.prepare();
   t.is(typeof t.context.preparing.then, 'function');
   t.is(t.context.prepared, false);
@@ -45,7 +45,7 @@ test('prepare', async (t) => {
 
 test('setup', async (t) => {
   t.is(t.context.prepared, false);
-  t.is(t.context.preparing, undefined); // eslint-disable-line
+  t.is(t.context.preparing, undefined);  
   const preparing = t.context.setup();
   t.is(typeof t.context.preparing.then, 'function');
   t.is(t.context.prepared, false);
@@ -132,7 +132,7 @@ test.group((test) => {
         t.is(t.context.prepared, false);
         t.context.output_options.output = 'folder';
         t.context.output_options.format = language;
-        t.is(t.context.preparing, undefined); // eslint-disable-line
+        t.is(t.context.preparing, undefined);  
         await t.context.output('woohoo', data);
         t.is(t.context.zip.getEntries()[0].name, `woohoo.${language}`);
         t.is(t.context.prepared, true);
@@ -148,7 +148,7 @@ test.group((test) => {
         t.context.output_options.output = zip_root;
         t.context.output_options.archive = `${language}.zip`;
         t.context.output_options.format = language;
-        t.is(t.context.preparing, undefined); // eslint-disable-line
+        t.is(t.context.preparing, undefined);  
         await t.context.output('woohoo', data);
         t.is(t.context.zip.getEntries()[0].name, `woohoo.${language}`);
         t.is(t.context.prepared, true);

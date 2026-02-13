@@ -1,4 +1,4 @@
-/* eslint-disable id-length, no-shadow, no-undefined */
+ 
 import to from 'to-js';
 import proxyquire from 'proxyquire';
 import req from 'request';

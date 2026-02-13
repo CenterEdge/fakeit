@@ -1,4 +1,4 @@
-/* eslint-disable no-undefined */
+ 
 
 import Models, {
   parseModelInputs,
@@ -163,7 +163,7 @@ test.group('registerModels', (test) => {
     try {
       await t.context.registerModels();
       t.pass();
-    } catch (e) {
+    } catch {
       t.fail();
     }
   });
@@ -346,7 +346,7 @@ test.group('parseModelFunctions', (test) => {
   }));
 
   test.group('ensure es6 support', (test) => {
-    /* eslint-disable max-len, quotes */
+     
     const tests = [
       {
         name: 'single line has a return',
@@ -364,7 +364,7 @@ test.group('parseModelFunctions', (test) => {
         expected: "function build(_documents, _globals, _inputs, _faker, _chance, _document_index, _require) {\n  function __result(documents, globals, inputs, faker, chance, document_index, require) {\n    var countries = inputs.countries;\n  \n    return \"\" + this.contact_id + countries[0];\n  }\n  return __result.apply(this, [].slice.call(arguments));\n}",
       },
     ];
-    /* eslint-enable max-len, quotes */
+     
 
     tests.forEach(({ name, actual: build, expected }) => {
       test(name, (t) => {
@@ -412,10 +412,10 @@ test.group('parseModelFunctions', (test) => {
       const stub = tests.map((item) => null); // eslint-disable-line
       test(name, (t) => {
         stub[i] = name;
-        const expected = `function build(_documents, _globals, _inputs, _faker, _chance, _document_index, _require) {\n  function __result(documents, globals, inputs, faker, chance, document_index, require) {\n    return ${name} + \"[${i}]\";\n  }\n  return __result.apply(this, [].slice.call(arguments));\n}`; // eslint-disable-line max-len
+        const expected = `function build(_documents, _globals, _inputs, _faker, _chance, _document_index, _require) {\n  function __result(documents, globals, inputs, faker, chance, document_index, require) {\n    return ${name} + "[${i}]";\n  }\n  return __result.apply(this, [].slice.call(arguments));\n}`;  
         let actual = {
           name,
-          build: `\`\$\{${name}\}[${i}]\``
+          build: `\`$\{${name}}[${i}]\``
         };
         parseModelFunctions(actual, babel_config);
         actual = actual.build;
@@ -593,7 +593,7 @@ test.group('parseModelCount', (test) => {
     parseModelDefaults(model);
     parseModelCount(model);
     t.truthy(model.data.count > 0);
-    if (!!model.data.max) {
+    if (model.data.max) {
       t.truthy(model.data.count <= model.data.max);
       t.truthy(model.data.count >= model.data.min);
     }

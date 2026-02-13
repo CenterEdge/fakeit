@@ -2,7 +2,7 @@ var utils = require('../../../../utils.js');
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/^product_[a-z0-9\-]+$/),
+  _id: is.string().regex(/^product_[a-z0-9-]+$/),
   doc_type: 'product',
   product_id: is.string().uuid(),
   price: is.number().precision(2),

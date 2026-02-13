@@ -370,7 +370,7 @@ export class Document extends Base {
       // builds a simple array
       for (let i = 0; i < count; i++) {
         const result = this.buildValue(property.items, typeToValue(property.items.type), doc, index);
-        if (result !== undefined) { // eslint-disable-line no-undefined
+        if (result !== undefined) {  
           value.push(result);
         }
       }

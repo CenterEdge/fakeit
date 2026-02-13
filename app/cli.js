@@ -52,7 +52,7 @@ export default async function() {
     .option('-L, --no-log', 'Disables all logging except for errors', false)
     .option('-T, --no-timestamp', 'Disables timestamps from logging output', false)
     // global output options
-    .option('-f, --format <type>', `this determines the output format to use. Supported formats: ${code('json', 'csv', 'yaml', 'yml', 'cson')}. (${dim('json')})`, 'json') // eslint-disable-line
+    .option('-f, --format <type>', `this determines the output format to use. Supported formats: ${code('json', 'csv', 'yaml', 'yml', 'cson')}. (${dim('json')})`, 'json')  
     .option('-n, --spacing <n>', `the number of spaces to use for indention (${dim('2')})`, 2)
     .option('-l, --limit <n>', `limit how many files are output at a time (${dim('10')})`, Number, 10)
     .option('-x, --seed <seed>', 'The global seed to use for repeatable data', (seed) => {
@@ -165,9 +165,9 @@ export default async function() {
       if (
         typeof str !== 'string' ||
         // if the previous str was one of these commands that has options then remove it
-        /^(\-\-(?:commander|root|babel|count|format|spacing|seed|limit)|(?:\-[cfnxl]{1,}))$/.test(prev) ||
+        /^(--(?:commander|root|babel|count|format|spacing|seed|limit)|(?:-[cfnxl]{1,}))$/.test(prev) ||
         // if the str is one of the commands then remove it
-        /^(([-]{1,2}[a-zA-Z]+)|\-\-no\-[a-z]+)$/.test(str) ||
+        /^(([-]{1,2}[a-zA-Z]+)|--no-[a-z]+)$/.test(str) ||
         // if the str is the same as the output path then remove it
         str === output_path
       ) {

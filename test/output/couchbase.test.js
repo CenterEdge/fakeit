@@ -1,4 +1,4 @@
-/* eslint-disable id-length, no-shadow, no-undefined */
+ 
 
 import Couchbase from '../../dist/output/couchbase';
 import couchbase from 'couchbase-promises';

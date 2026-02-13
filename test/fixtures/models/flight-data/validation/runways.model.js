@@ -38,7 +38,7 @@ module.exports = is.object({
         longitude: utils.check('float', 'The low bearing runway longitude', { build: is.func(), }),
         elevation: utils.check('integer', 'The low bearing runway elevation', { build: is.func(), }),
         magnetic_heading: utils.check('integer', 'The low bearing true magnetic heading', { build: is.func(), }),
-        displaced_threshold: utils.check('integer', 'The low bearing displacement from the end of the runway to the threshold', { build: is.func(), }), // eslint-disable-line
+        displaced_threshold: utils.check('integer', 'The low bearing displacement from the end of the runway to the threshold', { build: is.func(), }),  
       },
     },
     high_bearing: {
@@ -50,7 +50,7 @@ module.exports = is.object({
         longitude: utils.check('float', 'The high bearing runway longitude', { build: is.func(), }),
         elevation: utils.check('integer', 'The high bearing runway elevation', { build: is.func(), }),
         magnetic_heading: utils.check('integer', 'The high bearing true magnetic heading', { build: is.func(), }),
-        displaced_threshold: utils.check('integer', 'The high bearing displacement from the end of the runway to the threshold', { build: is.func(), }), // eslint-disable-line
+        displaced_threshold: utils.check('integer', 'The high bearing displacement from the end of the runway to the threshold', { build: is.func(), }),  
       },
     },
   },

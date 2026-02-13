@@ -51,6 +51,6 @@ module.exports = is.object({
     magnetic_variation: utils.check('float', 'The magnetic variation at the navaid\'s location if available, otherwise null', { build: is.func(), }),
     usage_type: utils.check('string', 'The usage type of the navaid if available, otherwise null', { build: is.func(), }),
     power: utils.check('string', 'The navaid\'s power if available, otherwise null', { build: is.func(), }),
-    associated_airport_icao_code: utils.check('string', 'An airport icao_code or ident that the navaid is associated with if available, otherwise null', { build: is.func(), }), // eslint-disable-line
+    associated_airport_icao_code: utils.check('string', 'An airport icao_code or ident that the navaid is associated with if available, otherwise null', { build: is.func(), }),  
   },
 });

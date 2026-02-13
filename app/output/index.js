@@ -59,7 +59,7 @@ export default class Output extends Base {
     let { output, archive } = this.output_options;
 
     if (!output_types.includes(output)) {
-      output = !!archive ? 'zip' : 'folder';
+      output = archive ? 'zip' : 'folder';
     }
 
     // get the outputter to use
@@ -103,7 +103,7 @@ export default class Output extends Base {
     }
 
     const { format, spacing, limit, output } = this.output_options;
-    const name = documents[0].__name; // eslint-disable-line
+    const name = documents[0].__name;  
     const spinner = this.spinner(`Outputting ${name}`);
     const times = [];
     const update = () => {
@@ -142,7 +142,7 @@ export default class Output extends Base {
     return pool(documents, async (document, i) => {
       const label = uniqueId(`document ${name} ${i}`);
       perfy.start(label);
-      const key = document.__key || document.__name || (document[0] || {}).__name || ''; // eslint-disable-line no-underscore-dangle
+      const key = document.__key || document.__name || (document[0] || {}).__name || '';  
       // use the outputter's output function to output the data
       const result = await this.outputter.output(key, await parser(document, spacing));
       update(count++);
@@ -287,7 +287,7 @@ export const validate = {
       option &&
       [ 'return', 'console' ].includes(output)
     ) {
-      throw new Error(`You can\'t have an archive file when you have the output option set to ${output}`);
+      throw new Error(`You can't have an archive file when you have the output option set to ${output}`);
     } else if (path.extname(option) !== '.zip') {
       throw new Error('The archive file must have a file extention of `.zip`');
     }
@@ -391,7 +391,7 @@ export function isServer(output) {
 /// @throws {error} - If the option isn't a string
 /// @throws {error} - If the option is a string and doesn't have a length
 export function isString(option, name = '') {
-  if (!!name) {
+  if (name) {
     name = ` ${name} `;
   }
   if (!is.string(option)) {

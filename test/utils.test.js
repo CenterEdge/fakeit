@@ -1,4 +1,4 @@
-/* eslint-disable id-length, no-shadow */
+ 
 
 import path, { join as p } from 'path';
 import ava from 'ava-spec';
@@ -114,7 +114,7 @@ test.group('findFiles', (test) => {
 
 test.group('readFiles', (test) => {
   const root = p(utils_root, 'read-files');
-  /* eslint-disable max-len */
+   
   const plain_files = [
     { path: p('file-1.txt'), content: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Doloremque qui itaque assumenda expedita a unde illum facere laborum, quaerat, ipsam error facilis ipsum quasi et, id deleniti placeat pariatur quia!' },
     { path: p('one', 'file.txt'), content: 'Et fuga in, necessitatibus ipsum tempore! Libero pariatur et nihil impedit quasi, saepe, vero facere aspernatur asperiores laudantium fugiat! Quibusdam modi, soluta assumenda, veritatis cumque dolorum tempore excepturi voluptate! Fugit?' },
@@ -130,7 +130,7 @@ test.group('readFiles', (test) => {
   // creating archives
   const zip_file = p(root, 'zip-test.zip');
   let zip = new AdmZip();
-  /* eslint-enable max-len */
+   
 
   test.before(async () => {
     await fs.remove(root);
@@ -296,7 +296,7 @@ test.serial.group('parsers', (test) => {
 
   // stores the tests for each of the parsers
   const tests = {};
-  /* eslint-disable max-len */
+   
   tests.yaml = tests.yml = `
     _id: airport_56
     airport_id: 56
@@ -320,7 +320,7 @@ test.serial.group('parsers', (test) => {
     timezone: Pacific/Port_Moresby
   `;
 
-  /* eslint-disable */
+   
   tests.json = {
     "_id": "airport_56",
     "airport_id": 56,
@@ -345,7 +345,7 @@ test.serial.group('parsers', (test) => {
     "timezone": "Pacific/Port_Moresby"
   };
 
-  /* eslint-enable */
+   
 
   tests.cson = `
     _id: "airport_56"
@@ -375,13 +375,13 @@ test.serial.group('parsers', (test) => {
     "airport_56",56,"airport","AYGA","medium_airport","Goroka","{""latitude"":-6.081689835,""longitude"":145.3919983}",5282,"OC","PG","PG-EHG","Goroka","AYGA","GKA","AYGA",10,"U","Pacific/Port_Moresby"
   `;
 
-  /* eslint-enable max-len */
+   
   // stores the available parsers that should exist
   const available = to.keys(tests);
 
   // generate tests for each parser in the list
   for (var parser in parsers) {
-    if (parsers.hasOwnProperty(parser)) {
+    if (Object.prototype.hasOwnProperty.call(parsers, parser)) {
       parserTest(parser);
     }
   }
@@ -405,7 +405,7 @@ test.serial.group('parsers', (test) => {
         t.is(to.type(parser.parse), 'function');
         t.is(to.type(parser.stringify), 'function');
         for (let fn in parser) {
-          if (parser.hasOwnProperty(fn)) {
+          if (Object.prototype.hasOwnProperty.call(parser, fn)) {
             t.truthy([ 'parse', 'stringify' ].includes(fn));
           }
         }
