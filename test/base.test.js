@@ -1,16 +1,11 @@
- 
-
+import { describe, expect, test } from '@jest/globals';
 import { join as p } from 'path';
-import ava from 'ava-spec';
-import to from 'to-js';
-import Base from '../dist/base';
-const test = ava.group('base:');
+import Base from '../app/base';
 
-test('without args', (t) => {
+test('without args', () => {
   const base = new Base();
-  t.deepEqual(base, {
+  expect(base).toEqual(expect.objectContaining({
     // inherited from events-async
-    domain: null,
     _events: {},
     _eventsCount: 0,
     _maxListeners: 50,
@@ -31,15 +26,14 @@ test('without args', (t) => {
       log: 'gray',
     },
     spinners: {},
-  });
+  }));
 });
 
 
-test('with args', (t) => {
+test('with args', () => {
   const base = new Base({ log: false });
-  t.deepEqual(base, {
+  expect(base).toEqual(expect.objectContaining({
     // inherited from events-async
-    domain: null,
     _events: {},
     _eventsCount: 0,
     _maxListeners: 50,
@@ -60,123 +54,129 @@ test('with args', (t) => {
       log: 'gray',
     },
     spinners: {},
-  });
+  }));
 });
 
-test('when options.verbose is true, it forces options.log to also be true', (t) => {
+test('when options.verbose is true, it forces options.log to also be true', () => {
   const base = new Base({
     log: false,
     verbose: true,
   });
-  t.is(base.options.log, true);
-  t.is(base.options.verbose, true);
+  expect(base).toHaveProperty('options.log', true);
+  expect(base).toHaveProperty('options.verbose', true);
 });
 
-test.group('functions', (test) => {
-  test.group('resolvePaths', (test) => {
-    test.beforeEach((t) => {
-      t.context = new Base();
-    });
-
+describe('functions', () => {
+  describe('resolvePaths', () => {
     function paths(prefix = process.cwd()) {
       return [ 'one', 'two', 'three', 'four' ].map((str) => p(prefix, str));
     }
 
-    test('no args', (t) => {
-      t.is(to.type(t.context.resolvePaths()), 'array', 'should return an empty array');
-      t.pass();
+    test('no args', () => {
+      const base = new Base();
+      expect(base.resolvePaths()).toEqual([]);
     });
 
-    test('passed a string with 1 path', (t) => {
-      t.deepEqual(t.context.resolvePaths('one'), [ p(process.cwd(), 'one') ]);
+    test('passed a string with 1 path', () => {
+      const base = new Base();
+      expect(base.resolvePaths('one')).toEqual([ p(process.cwd(), 'one') ]);
     });
 
-    test('passed a string with multiple paths as a comma delimited list without spaces', (t) => {
+    test('passed a string with multiple paths as a comma delimited list without spaces', () => {
       const [ one, two, three, four ] = paths();
-      t.deepEqual(t.context.resolvePaths('one,two'), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths('one,two,three'), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths('one,two,three,four'), [ one, two, three, four ]);
+      const base = new Base();
+      expect(base.resolvePaths('one,two')).toEqual([ one, two ]);
+      expect(base.resolvePaths('one,two,three')).toEqual([ one, two, three ]);
+      expect(base.resolvePaths('one,two,three,four')).toEqual([ one, two, three, four ]);
     });
 
-    test('passed a string with multiple paths as a comma delimited list with spaces', (t) => {
+    test('passed a string with multiple paths as a comma delimited list with spaces', () => {
       const [ one, two, three, four ] = paths();
-      t.deepEqual(t.context.resolvePaths('one, two'), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths('one ,two'), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths('one , two'), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths('one, two, three'), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths('one ,two ,three'), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths('one , two , three'), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths('one, two, three, four'), [ one, two, three, four ]);
-      t.deepEqual(t.context.resolvePaths('one ,two ,three ,four'), [ one, two, three, four ]);
-      t.deepEqual(t.context.resolvePaths('one , two , three , four'), [ one, two, three, four ]);
+      const base = new Base();
+      expect(base.resolvePaths('one, two')).toEqual([ one, two ]);
+      expect(base.resolvePaths('one ,two')).toEqual([ one, two ]);
+      expect(base.resolvePaths('one , two')).toEqual([ one, two ]);
+      expect(base.resolvePaths('one, two, three')).toEqual([ one, two, three ]);
+      expect(base.resolvePaths('one ,two ,three')).toEqual([ one, two, three ]);
+      expect(base.resolvePaths('one , two , three')).toEqual([ one, two, three ]);
+      expect(base.resolvePaths('one, two, three, four')).toEqual([ one, two, three, four ]);
+      expect(base.resolvePaths('one ,two ,three ,four')).toEqual([ one, two, three, four ]);
+      expect(base.resolvePaths('one , two , three , four')).toEqual([ one, two, three, four ]);
     });
 
-    test('passed a string with multiple paths as a space delimited list', (t) => {
+    test('passed a string with multiple paths as a space delimited list', () => {
       const [ one, two, three, four ] = paths();
-      t.deepEqual(t.context.resolvePaths('one two'), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths('one        two'), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths('one two three'), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths('one        two        three'), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths('one two three four'), [ one, two, three, four ]);
-      t.deepEqual(t.context.resolvePaths('one        two        three        four'), [ one, two, three, four ]);
+      const base = new Base();
+      expect(base.resolvePaths('one two')).toEqual([ one, two ]);
+      expect(base.resolvePaths('one        two')).toEqual([ one, two ]);
+      expect(base.resolvePaths('one two three')).toEqual([ one, two, three ]);
+      expect(base.resolvePaths('one        two        three')).toEqual([ one, two, three ]);
+      expect(base.resolvePaths('one two three four')).toEqual([ one, two, three, four ]);
+      expect(base.resolvePaths('one        two        three        four')).toEqual([ one, two, three, four ]);
     });
 
-    test('passed a string with extra commas', (t) => {
+    test('passed a string with extra commas', () => {
       const [ one, two, three, four ] = paths();
-      t.deepEqual(t.context.resolvePaths('one,two,'), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths('one,two,three,'), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths('one,two,three,four'), [ one, two, three, four ]);
-      t.deepEqual(t.context.resolvePaths('one ,two ,'), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths('one ,two ,three ,'), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths('one ,two ,three ,four ,'), [ one, two, three, four ]);
-      t.deepEqual(t.context.resolvePaths('one  ,  two  ,  '), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths('one  ,  two  ,  three  ,  '), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths('one  ,  two  ,  three  ,  four  ,  '), [ one, two, three, four ]);
+      const base = new Base();
+      expect(base.resolvePaths('one,two,')).toEqual([ one, two ]);
+      expect(base.resolvePaths('one,two,three,')).toEqual([ one, two, three ]);
+      expect(base.resolvePaths('one,two,three,four')).toEqual([ one, two, three, four ]);
+      expect(base.resolvePaths('one ,two ,')).toEqual([ one, two ]);
+      expect(base.resolvePaths('one ,two ,three ,')).toEqual([ one, two, three ]);
+      expect(base.resolvePaths('one ,two ,three ,four ,')).toEqual([ one, two, three, four ]);
+      expect(base.resolvePaths('one  ,  two  ,  ')).toEqual([ one, two ]);
+      expect(base.resolvePaths('one  ,  two  ,  three  ,  ')).toEqual([ one, two, three ]);
+      expect(base.resolvePaths('one  ,  two  ,  three  ,  four  ,  ')).toEqual([ one, two, three, four ]);
     });
 
-    test('passed a string with staring/trailing spaces', (t) => {
+    test('passed a string with staring/trailing spaces', () => {
       const [ one, two, three ] = paths();
-      t.deepEqual(t.context.resolvePaths('one two  '), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths('   one    ,    two      '), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths('  one two, three'), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths('    one ,two        three'), [ one, two, three ]);
+      const base = new Base();
+      expect(base.resolvePaths('one two  ')).toEqual([ one, two ]);
+      expect(base.resolvePaths('   one    ,    two      ')).toEqual([ one, two ]);
+      expect(base.resolvePaths('  one two, three')).toEqual([ one, two, three ]);
+      expect(base.resolvePaths('    one ,two        three')).toEqual([ one, two, three ]);
     });
 
-    test('passed a array with normal paths', (t) => {
+    test('passed a array with normal paths', () => {
       const [ one, two, three, four ] = paths();
-      t.deepEqual(t.context.resolvePaths([ 'one' ]), [ one ]);
-      t.deepEqual(t.context.resolvePaths([ 'one', 'two' ]), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths([ 'one', 'two', 'three' ]), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths([ 'one', 'two', 'three', 'four' ]), [ one, two, three, four ]);
+      const base = new Base();
+      expect(base.resolvePaths([ 'one' ])).toEqual([ one ]);
+      expect(base.resolvePaths([ 'one', 'two' ])).toEqual([ one, two ]);
+      expect(base.resolvePaths([ 'one', 'two', 'three' ])).toEqual([ one, two, three ]);
+      expect(base.resolvePaths([ 'one', 'two', 'three', 'four' ])).toEqual([ one, two, three, four ]);
     });
 
-    test('passed a array with nested comma paths', (t) => {
+    test('passed a array with nested comma paths', () => {
       const [ one, two, three, four ] = paths();
-      t.deepEqual(t.context.resolvePaths([ '   one,   ' ]), [ one ]);
-      t.deepEqual(t.context.resolvePaths([ 'one, two' ]), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths([ 'one ,two', ', three   ' ]), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths([ 'one', 'two    ,three', ',    four   ,' ]), [ one, two, three, four ]);
+      const base = new Base();
+      expect(base.resolvePaths([ '   one,   ' ])).toEqual([ one ]);
+      expect(base.resolvePaths([ 'one, two' ])).toEqual([ one, two ]);
+      expect(base.resolvePaths([ 'one ,two', ', three   ' ])).toEqual([ one, two, three ]);
+      expect(base.resolvePaths([ 'one', 'two    ,three', ',    four   ,' ])).toEqual([ one, two, three, four ]);
     });
 
-    test('passed a array with nested spaced paths', (t) => {
+    test('passed a array with nested spaced paths', () => {
       const [ one, two, three, four ] = paths();
-      t.deepEqual(t.context.resolvePaths([ '   one   ' ]), [ one ]);
-      t.deepEqual(t.context.resolvePaths([ 'one two' ]), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths([ 'one two', ' three   ' ]), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths([ 'one', 'two    three', '    four   ' ]), [ one, two, three, four ]);
+      const base = new Base();
+      expect(base.resolvePaths([ '   one   ' ])).toEqual([ one ]);
+      expect(base.resolvePaths([ 'one two' ])).toEqual([ one, two ]);
+      expect(base.resolvePaths([ 'one two', ' three   ' ])).toEqual([ one, two, three ]);
+      expect(base.resolvePaths([ 'one', 'two    three', '    four   ' ])).toEqual([ one, two, three, four ]);
     });
 
-    test('with different root', (t) => {
-      t.context.options.root = 'wooohoooo';
+    test('with different root', () => {
+      const base = new Base();
+      base.options.root = 'wooohoooo';
       const [ one, two, three, four ] = paths('wooohoooo');
-      t.deepEqual(t.context.resolvePaths('one, '), [ one ]);
-      t.deepEqual(t.context.resolvePaths('one, two'), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths('one, two, three'), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths('one, two, three, four'), [ one, two, three, four ]);
-      t.deepEqual(t.context.resolvePaths([ 'one, ' ]), [ one ]);
-      t.deepEqual(t.context.resolvePaths([ 'one, two' ]), [ one, two ]);
-      t.deepEqual(t.context.resolvePaths([ 'one', 'two', 'three' ]), [ one, two, three ]);
-      t.deepEqual(t.context.resolvePaths([ 'one', 'two, three', 'four' ]), [ one, two, three, four ]);
+      expect(base.resolvePaths('one, ')).toEqual([ one ]);
+      expect(base.resolvePaths('one, two')).toEqual([ one, two ]);
+      expect(base.resolvePaths('one, two, three')).toEqual([ one, two, three ]);
+      expect(base.resolvePaths('one, two, three, four')).toEqual([ one, two, three, four ]);
+      expect(base.resolvePaths([ 'one, ' ])).toEqual([ one ]);
+      expect(base.resolvePaths([ 'one, two' ])).toEqual([ one, two ]);
+      expect(base.resolvePaths([ 'one', 'two', 'three' ])).toEqual([ one, two, three ]);
+      expect(base.resolvePaths([ 'one', 'two, three', 'four' ])).toEqual([ one, two, three, four ]);
     });
   });
 });

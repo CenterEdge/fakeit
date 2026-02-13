@@ -10,7 +10,7 @@
   "scripts": {
     "build": "babel app --out-dir dist",
     "lint": "eslint",
-    "test": "make test",
+    "test": "jest",
     "watch": "make build -- --watch"
   },
   "bin": {
@@ -85,32 +85,15 @@
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.0",
     "@eslint/js": "^10.0.1",
-    "ava": "^0.16.0",
-    "ava-spec": "github:tjbenton/ava-spec",
-    "coveralls": "^2.11.15",
+    "babel-jest": "^30.2.0",
     "eslint": "^10.0.0",
     "get-stream": "~3.0.0",
     "globals": "^17.3.0",
+    "jest": "^30.2.0",
     "joi": "~10.2.0",
     "jsondiffpatch": "~0.2.4",
     "nixt": "~0.5.0",
-    "np": "~2.12.0",
-    "nyc": "~10.1.2",
-    "proxyquire": "~1.7.10",
     "test-console": "~1.0.0"
-  },
-  "ava": {
-    "files": [
-      "test/**/*.test.js"
-    ],
-    "source": [
-      "dist/**/*",
-      "test/fixtures/models/*/+(models|validation)/*",
-      "test/utils.js"
-    ],
-    "failFast": true,
-    "concurrency": 1,
-    "babel": "inherit"
   },
   "nyc": {
     "exclude": [

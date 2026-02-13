@@ -6,8 +6,7 @@ examples
 test
 eslint.config.mjs
 Makefile
-.nyc*
-coverage
 babel.config.json
 .travis.yaml
 docsfile.js
+jest.config.js
