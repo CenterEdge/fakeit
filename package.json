@@ -8,6 +8,7 @@
   "version": "2.0.0",
   "description": "Command-line utility that generates fake data which can be output as JSON, YAML, CSON, or CSV formats based on models defined in YAML.",
   "scripts": {
+    "build": "babel app --out-dir dist",
     "lint": "eslint",
     "test": "make test",
     "watch": "make build -- --watch"
@@ -24,7 +25,7 @@
     "url": "https://github.com/centeredge/fakeit/issues"
   },
   "engines": {
-    "node": ">=5"
+    "node": ">=20"
   },
   "keywords": [
     "fake",
@@ -80,15 +81,12 @@
     "yamljs": "^0.2.8"
   },
   "devDependencies": {
+    "@babel/cli": "^7.28.6",
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.0",
     "@eslint/js": "^10.0.1",
     "ava": "^0.16.0",
     "ava-spec": "github:tjbenton/ava-spec",
-    "babel-cli": "~6.22.2",
-    "babel-plugin-array-includes": "~2.0.3",
-    "babel-plugin-external-helpers": "~6.22.0",
-    "babel-plugin-transform-runtime": "~6.22.0",
-    "babel-preset-latest": "~6.22.0",
-    "babel-preset-stage-0": "~6.22.0",
     "coveralls": "^2.11.15",
     "eslint": "^10.0.0",
     "get-stream": "~3.0.0",
@@ -100,17 +98,6 @@
     "nyc": "~10.1.2",
     "proxyquire": "~1.7.10",
     "test-console": "~1.0.0"
-  },
-  "babelConfig": {
-    "presets": [
-      "latest",
-      "stage-0"
-    ],
-    "plugins": [
-      "transform-runtime",
-      "external-helpers",
-      "array-includes"
-    ]
   },
   "ava": {
     "files": [

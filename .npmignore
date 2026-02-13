@@ -4,10 +4,10 @@ app/
 .git*
 examples
 test
-.eslint*
+eslint.config.mjs
 Makefile
 .nyc*
 coverage
-.babelrc
+babel.config.json
 .travis.yaml
 docsfile.js
