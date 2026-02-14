@@ -45,7 +45,7 @@ export default class Output extends Base {
   prepare() {
     this.preparing = true;
     this.preparing = this.setup();
-    return this.preparing;
+    return this.preparing.then(() => this.prepared = true);
   }
 
   ///# @name setup
@@ -75,10 +75,6 @@ export default class Output extends Base {
       this.prepared = true;
       return;
     }
-
-    process.nextTick(() => {
-      this.prepared = true;
-    });
   }
 
   ///# @name output

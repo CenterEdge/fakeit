@@ -1,273 +1,271 @@
-import ava from 'ava-spec';
-import Logger from '../dist/logger';
+import { describe, expect, test, beforeEach } from '@jest/globals';
+import Logger from '../app/logger';
 import to from 'to-js';
-import { stdout } from 'test-console';
 import { stripColor } from 'chalk';
 import { PassThrough as PassThroughStream } from 'stream';
 import _ from 'lodash';
 import getStream from 'get-stream';
-const test = ava.group('logger:');
 import formatSeconds from 'format-seconds';
+import { startCapturing, stopCapturing } from './console';
+
 const delay = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
 
-test.beforeEach((t) => {
-  t.context = new Logger();
-});
+let logger;
 
-
-test('functions', (t) => {
-  t.deepEqual(
-    to.keys(Logger.prototype).sort(),
-    [ 'constructor', 'log', 'spinner', 'stamp', 'time', 'timeEnd' ].sort()
-  );
-});
-
-
-test.group('options', (test) => {
-  test('none', (t) => {
-    t.deepEqual(t.context.options, { log: true, verbose: false, spinners: true, timestamp: true });
+describe('logger:', () => {
+  beforeEach(() => {
+    logger = new Logger();
   });
 
-  test('log is false', (t) => {
-    const logger = new Logger({ log: false });
-    t.deepEqual(logger.options, { log: false, verbose: false, spinners: false, timestamp: true });
+  test('functions', () => {
+    expect(
+      to.keys(Logger.prototype).sort()
+    ).toEqual(
+      [ 'constructor', 'log', 'spinner', 'stamp', 'time', 'timeEnd' ].sort()
+    );
   });
 
-  test('log is false and verbose is true', (t) => {
-    const logger = new Logger({ log: false, verbose: true });
-    t.deepEqual(logger.options, { log: true, verbose: true, spinners: true, timestamp: true });
+  describe('options', () => {
+    test('none', () => {
+      expect(logger.options).toEqual({ log: true, verbose: false, spinners: true, timestamp: true });
+    });
+
+    test('log is false', () => {
+      const newLogger = new Logger({ log: false });
+      expect(newLogger.options).toEqual({ log: false, verbose: false, spinners: false, timestamp: true });
+    });
+
+    test('log is false and verbose is true', () => {
+      const newLogger = new Logger({ log: false, verbose: true });
+      expect(newLogger.options).toEqual({ log: true, verbose: true, spinners: true, timestamp: true });
+    });
   });
-});
 
+  describe('log', () => {
+    test('returns this', () => {
+      startCapturing();
+      const actual = logger.log();
+      stopCapturing();
+      expect(actual.constructor.name).toBe('Logger');
+    });
 
-test.serial.group('log', (test) => {
-  test('returns this', (t) => {
-    const inspect = stdout.inspect();
-    const actual = t.context.log();
-    inspect.restore();
-    t.is(actual.constructor.name, 'Logger');
-  });
+    const log_types = [ ['warning'], ['success'], ['info'], ['verbose'], ['log'] ];
 
-  const log_types = [ 'warning', 'success', 'info', 'verbose', 'log' ];
-
-  log_types.forEach((type) => {
-    test(type, (t) => {
-      t.context.options.verbose = true;
-      const inspect = stdout.inspect();
-      t.context.log(type, `${type} test`);
-      inspect.restore();
-      t.is(inspect.output.length, 2);
-      t.is(inspect.output[1].trim(), `${type} test`);
+    test.each(log_types, (type) => {
+      logger.options.verbose = true;
+      startCapturing();
+      logger.log(type, `${type} test`);
+      const consoleOutput = stopCapturing();
+      expect(consoleOutput.length).toBe(2);
+      expect(consoleOutput[1].trim()).toBe(`${type} test`);
       if (![ 'warning', 'info' ].includes(type)) {
         type = '';
       }
-      t.truthy(new RegExp(`^\\[[0-9]+:[0-9]+:[0-9]+\\]\\s(?:.+)?\\s*${type}:?\\s*$`).test(stripColor(inspect.output[0])));
-    });
-  });
-
-  test.group('throws error', (test) => {
-    const regex = /^\[[0-9]+:[0-9]+:[0-9]+\]\s.+\serror:\s*$/;
-    test('when string is passed as the type', (t) => {
-      const tester = () => t.context.log('error', 'woohoo');
-      const inspect = stdout.inspect();
-      t.throws(tester);
-      inspect.restore();
-      t.is(inspect.output.length, 2);
-      t.is(inspect.output[1].trim(), 'woohoo');
-      t.truthy(regex.test(stripColor(inspect.output[0])));
+      expect(stripColor(consoleOutput[0])).toMatch(new RegExp(`^\\[[0-9]+:[0-9]+:[0-9]+\\]\\s(?:.+)?\\s*${type}:?\\s*$`));
     });
 
-    test('when error constructor is passed as the first argument', (t) => {
-      const tester = () => t.context.log(new Error('woohoo'));
-      const inspect = stdout.inspect();
-      t.throws(tester);
-      inspect.restore();
-      t.is(inspect.output.length, 2);
-      let [ message, ...err_lines ] = inspect.output[1].split('\n');
-      t.truthy(/\[?Error: woohoo\]?/.test(message.trim()));
-      err_lines.forEach((line) => {
-        line = line.trim();
-        if (line) {
-          t.is(line.slice(0, 2), 'at');
-        }
+    describe('throws error', () => {
+      const regex = /^\[[0-9]+:[0-9]+:[0-9]+\]\s.+\serror:\s*$/;
+      test('when string is passed as the type', () => {
+        const tester = () => logger.log('error', 'woohoo');
+        startCapturing();
+        expect(tester).toThrow();
+        const consoleOutput = stopCapturing();
+        expect(consoleOutput.length).toBe(2);
+        expect(consoleOutput[1].trim()).toBe('woohoo');
+        expect(stripColor(consoleOutput[0])).toMatch(regex);
       });
-      t.truthy(regex.test(stripColor(inspect.output[0])));
-    });
-  });
 
-  test('time and timeEnd', async (t) => {
-    const time = t.context.log('time', 'woohoo');
-    t.is(time.constructor.name, 'Logger');
-    await delay(200);
-    const end = t.context.log('timeEnd', 'woohoo');
-    const woohoo = parseFloat(end.match(/\+([0-9.]+)/)[1]);
-    t.truthy(woohoo > 190);
-  });
-});
-
-
-test.serial.group('time', (test) => {
-  test('throws when no label is passed (time)', (t) => {
-    const tester = () => t.context.time();
-    const inspect = stdout.inspect();
-    t.throws(tester);
-    inspect.restore();
-    t.not(stripColor(inspect.output[0]), inspect.output[0]);
-    t.truthy(/^\[[0-9]+:[0-9]+:[0-9]+\]\s.+\serror:\s*$/.test(stripColor(inspect.output[0])));
-    t.is(inspect.output.length, 2);
-    t.is(inspect.output[1].split('\n')[0], 'You must pass in a label for `Logger.prototype.time`');
-  });
-
-  test('throws when no label is passed (timeEnd)', (t) => {
-    const tester = () => t.context.timeEnd();
-    const inspect = stdout.inspect();
-    t.throws(tester);
-    inspect.restore();
-    t.not(stripColor(inspect.output[0]), inspect.output[0]);
-    t.truthy(/^\[[0-9]+:[0-9]+:[0-9]+\]\s.+\serror:\s*$/.test(stripColor(inspect.output[0])));
-    t.is(inspect.output.length, 2);
-    t.is(inspect.output[1].split('\n')[0], 'You must pass in a label for `Logger.prototype.timeEnd`');
-  });
-
-  test('returns this', (t) => {
-    const actual = t.context.time('returns');
-    t.is(actual.constructor.name, 'Logger');
-  });
-
-  test.serial.group((test) => {
-    let number = 0.0000025;
-    const tests = _.times(9, () => {
-      number *= 10;
-      return number;
-    });
-
-    tests.forEach((time) => {
-      const expected = formatSeconds(time);
-      test(expected, async (t) => {
-        t.context.time(expected);
-        await delay(time);
-        const actual = t.context.timeEnd(expected);
-        t.truthy(actual);
-        t.is(typeof actual, 'string');
-        const [ number, unit ] = stripColor(actual).trim().match(/\+?([0-9.]+)\s*([µmsn]+)?/).slice(1);
-        if (number !== '0') {
-          t.is(typeof unit, 'string');
-          t.truthy([ 'µs', 'ns', 'ms', 's', ].includes(unit));
-        }
-        t.is(typeof parseFloat(number), 'number');
+      test('when error constructor is passed as the first argument', () => {
+        const tester = () => logger.log(new Error('woohoo'));
+        startCapturing();
+        expect(tester).toThrow();
+        const consoleOutput = stopCapturing();
+        expect(consoleOutput.length).toBe(2);
+        let [ message, ...err_lines ] = consoleOutput[1].split('\n');
+        expect(message.trim()).toMatch(/\[?Error: woohoo\]?/);
+        err_lines.forEach((line) => {
+          line = line.trim();
+          if (line) {
+            expect(line.slice(0, 2)).toBe('at');
+          }
+        });
+        expect(stripColor(consoleOutput[0])).toMatch(regex);
       });
     });
-  });
-});
 
-
-test.serial.group('spinner', (test) => {
-  function getPassThroughStream() {
-    const stream = new PassThroughStream();
-    stream.clearLine = _.noop;
-    stream.cursorTo = _.noop;
-    return stream;
-  }
-
-  test('returns a modified instance of Ora', (t) => {
-    const actual = t.context.spinner('instance');
-    t.is(actual.constructor.name, 'Ora');
-    t.is(actual.title, 'instance');
-    t.is(actual.text, 'instance');
-    t.is(typeof actual.originalStart, 'function');
-    t.is(typeof actual.originalStop, 'function');
-    t.truthy(/this\.originalStop\(\);/.test(actual.stopAndPersist.toString()));
-  });
-
-  test.serial('start/stop/stopAndPersist do nothing in TTY env', async (t) => {
-    const actual = t.context.spinner('woohoo');
-    const inspect = stdout.inspect();
-    const start_result = actual.start();
-    await delay(200);
-    const stop_result = actual.stop();
-    actual.start();
-    const stop_and_persist_result = actual.stopAndPersist('✔');
-    inspect.restore();
-    t.is(start_result.constructor.name, 'Ora');
-    t.is(stop_result.constructor.name, 'Ora');
-    t.is(stop_and_persist_result.constructor.name, 'Ora');
-    t.deepEqual(inspect.output, []);
-  });
-
-  test('start/stop custom stream', async (t) => {
-    const stream = getPassThroughStream();
-    const actual = t.context.spinner({ stream, text: 'stop__', color: false, enabled: true });
-    actual.start();
-    await delay(200);
-    actual.stop();
-    stream.end();
-    const output = await getStream(stream);
-    output.trim().split('__').filter(Boolean).forEach((state) => {
-      const [ frame, text ] = state.split(/\s+/);
-      t.truthy(actual.spinner.frames.includes(frame));
-      t.is(text, 'stop');
+    test('time and timeEnd', async () => {
+      const time = logger.log('time', 'woohoo');
+      expect(time.constructor.name).toBe('Logger');
+      await delay(200);
+      const end = logger.log('timeEnd', 'woohoo');
+      const woohoo = parseFloat(end.match(/\+([0-9.]+)/)[1]);
+      expect(woohoo > 190).toBeTruthy();
     });
   });
 
-  test('start/stop custom stream with verbose option', async (t) => {
-    const stream = getPassThroughStream();
-    t.context.options.verbose = true;
-    const actual = t.context.spinner({ stream, text: 'stop__', color: false, enabled: true });
-    actual.start();
-    await delay(200);
-    actual.stop();
-    stream.end();
-    const states = stripColor(await getStream(stream)).trim().split('__').filter(Boolean);
-    const last_state = states.splice(-2, 2).join('');
-    states.filter(Boolean).forEach((state) => {
-      const [ frame, text ] = state.split(/\s+/);
-      t.truthy(actual.spinner.frames.includes(frame));
-      t.is(text, 'stop');
+  describe('time', () => {
+    test('throws when no label is passed (time)', () => {
+      const tester = () => logger.time();
+      startCapturing();
+      expect(tester).toThrow();
+      const consoleOutput = stopCapturing();
+      expect(stripColor(consoleOutput[0])).not.toBe(consoleOutput[0]);
+      expect(stripColor(consoleOutput[0])).toMatch(/^\[[0-9]+:[0-9]+:[0-9]+\]\s.+\serror:\s*$/);
+      expect(consoleOutput.length).toBe(2);
+      expect(consoleOutput[1].split('\n')[0]).toBe('You must pass in a label for `Logger.prototype.time`');
     });
-    {
-      const [ check, text, time, unit ] = last_state.split(/\s+/);
-      t.is(check, '✔');
-      t.is(text, 'stop');
-      t.truthy(/^\+2[0-9]{2}\sms$/.test(`${time} ${unit}`));
+
+    test('throws when no label is passed (timeEnd)', () => {
+      const tester = () => logger.timeEnd();
+      startCapturing();
+      expect(tester).toThrow();
+      const consoleOutput = stopCapturing();
+      expect(stripColor(consoleOutput[0])).not.toBe(consoleOutput[0]);
+      expect(stripColor(consoleOutput[0])).toMatch(/^\[[0-9]+:[0-9]+:[0-9]+\]\s.+\serror:\s*$/);
+      expect(consoleOutput.length).toBe(2);
+      expect(consoleOutput[1].split('\n')[0]).toBe('You must pass in a label for `Logger.prototype.timeEnd`');
+    });
+
+    test('returns this', () => {
+      const actual = logger.time('returns');
+      expect(actual.constructor.name).toBe('Logger');
+    });
+
+    describe('formatting times', () => {
+      let number = 0.0000025;
+      const tests = _.times(9, () => {
+        number *= 10;
+        return number;
+      });
+
+      tests.forEach((time) => {
+        const expected = formatSeconds(time);
+        test(expected, async () => {
+          logger.time(expected);
+          await delay(time);
+          const actual = logger.timeEnd(expected);
+          expect(actual).toBeTruthy();
+          expect(typeof actual).toBe('string');
+          const [ number, unit ] = stripColor(actual).trim().match(/\+?([0-9.]+)\s*([µmsn]+)?/).slice(1);
+          if (number !== '0') {
+            expect(typeof unit).toBe('string');
+            expect([ 'µs', 'ns', 'ms', 's', ].includes(unit)).toBeTruthy();
+          }
+          expect(typeof parseFloat(number)).toBe('number');
+        });
+      });
+    });
+  });
+
+  describe('spinner', () => {
+    function getPassThroughStream() {
+      const stream = new PassThroughStream();
+      stream.clearLine = _.noop;
+      stream.cursorTo = _.noop;
+      return stream;
     }
-  });
 
-  test.serial('fail custom stream', async (t) => {
-    const stream = getPassThroughStream();
-    const [ one, two, three ] = [ 'one', 'two', 'three' ].map((str) => t.context.spinner({ stream, text: `${str}__`, color: false, enabled: true }));
-    const inspect = stdout.inspect();
-    one.start();
-    two.start();
-    three.start();
-    t.truthy(one.id);
-    t.truthy(two.id);
-    t.truthy(three.id);
-    const tester = () => three.fail('failed');
-    t.throws(tester);
-    inspect.restore();
-    t.is(one.id, null);
-    t.is(two.id, null);
-    t.is(three.id, null);
-    t.truthy(/error: failed/.test(stripColor(inspect.output.join(''))));
-    stream.end();
-    const states = stripColor(await getStream(stream)).trim().split('__').filter(Boolean);
-    const last_state = states.pop();
-    states.forEach((state) => {
-      const [ frame, text ] = state.split(/\s+/);
-      t.truthy(one.spinner.frames.includes(frame));
-      t.truthy([ 'one', 'two', 'three' ].includes(text));
+    test('returns a modified instance of Ora', () => {
+      const actual = logger.spinner('instance');
+      expect(actual.constructor.name).toBe('Ora');
+      expect(actual.title).toBe('instance');
+      expect(actual.text).toBe('instance');
+      expect(typeof actual.originalStart).toBe('function');
+      expect(typeof actual.originalStop).toBe('function');
+      expect(actual.stopAndPersist.toString()).toMatch(/this\.originalStop\(\);/);
     });
 
-    {
-      const [ check, text ] = last_state.split(/\s+/);
-      t.is(check, '✖');
-      t.is(text, 'three');
-    }
-  });
+    test('start/stop/stopAndPersist do nothing in TTY env', async () => {
+      const actual = logger.spinner('woohoo');
+      startCapturing();
+      const start_result = actual.start();
+      await delay(200);
+      const stop_result = actual.stop();
+      actual.start();
+      const stop_and_persist_result = actual.stopAndPersist('✔');
+      const consoleOutput = stopCapturing();
+      expect(start_result.constructor.name).toBe('Ora');
+      expect(stop_result.constructor.name).toBe('Ora');
+      expect(stop_and_persist_result.constructor.name).toBe('Ora');
+      expect(consoleOutput).toEqual([]);
+    });
 
-  test('spinner already exists so return it', (t) => {
-    t.deepEqual(t.context.spinners, {});
-    _.times(2, () => t.context.spinner('exists'));
-    t.deepEqual(_.keys(t.context.spinners), [ 'exists' ]);
+    test('start/stop custom stream', async () => {
+      const stream = getPassThroughStream();
+      const actual = logger.spinner({ stream, text: 'stop__', color: false, enabled: true });
+      actual.start();
+      await delay(200);
+      actual.stop();
+      stream.end();
+      const output = await getStream(stream);
+      output.trim().split('__').filter(Boolean).forEach((state) => {
+        const [ frame, text ] = state.split(/\s+/);
+        expect(actual.spinner.frames.includes(frame)).toBeTruthy();
+        expect(text).toBe('stop');
+      });
+    });
+
+    test('start/stop custom stream with verbose option', async () => {
+      const stream = getPassThroughStream();
+      logger.options.verbose = true;
+      const actual = logger.spinner({ stream, text: 'stop__', color: false, enabled: true });
+      actual.start();
+      await delay(200);
+      actual.stop();
+      stream.end();
+      const states = stripColor(await getStream(stream)).trim().split('__').filter(Boolean);
+      const last_state = states.splice(-2, 2).join('');
+      states.filter(Boolean).forEach((state) => {
+        const [ frame, text ] = state.split(/\s+/);
+        expect(actual.spinner.frames.includes(frame)).toBeTruthy();
+        expect(text).toBe('stop');
+      });
+      {
+        const [ check, text, time, unit ] = last_state.split(/\s+/);
+        expect(check).toBe('√');
+        expect(text).toBe('stop');
+        expect(`${time} ${unit}`).toMatch(/^\+2[0-9]{2}\sms$/);
+      }
+    });
+
+    test('fail custom stream', async () => {
+      const stream = getPassThroughStream();
+      const [ one, two, three ] = [ 'one', 'two', 'three' ].map((str) => logger.spinner({ stream, text: `${str}__`, color: false, enabled: true }));
+      startCapturing();
+      one.start();
+      two.start();
+      three.start();
+      expect(one.id).toBeTruthy();
+      expect(two.id).toBeTruthy();
+      expect(three.id).toBeTruthy();
+      const tester = () => three.fail('failed');
+      expect(tester).toThrow();
+      const consoleOutput = stopCapturing();
+      expect(one.id).toBe(null);
+      expect(two.id).toBe(null);
+      expect(three.id).toBe(null);
+      expect(stripColor(consoleOutput.join(''))).toMatch(/error: failed/);
+      stream.end();
+      const states = stripColor(await getStream(stream)).trim().split('__').filter(Boolean);
+      const last_state = states.pop();
+      states.forEach((state) => {
+        const [ frame, text ] = state.split(/\s+/);
+        expect(one.spinner.frames.includes(frame)).toBeTruthy();
+        expect([ 'one', 'two', 'three' ].includes(text)).toBeTruthy();
+      });
+
+      {
+        const [ check, text ] = last_state.split(/\s+/);
+        expect(check).toBe('×');
+        expect(text).toBe('three');
+      }
+    });
+
+    test('spinner already exists so return it', () => {
+      expect(logger.spinners).toEqual({});
+      _.times(2, () => logger.spinner('exists'));
+      expect(_.keys(logger.spinners)).toEqual([ 'exists' ]);
+    });
   });
 });

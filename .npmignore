@@ -6,6 +6,7 @@ examples
 test
 eslint.config.mjs
 Makefile
+.babelrc.test
 babel.config.json
 .travis.yaml
 docsfile.js

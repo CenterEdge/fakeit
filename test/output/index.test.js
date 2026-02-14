@@ -1,682 +1,626 @@
- 
-
-import Output, { validate, isServer, isString, output_types } from '../../dist/output/index';
-import ava from 'ava-spec';
+import Output, { validate, isServer, isString, output_types } from '../../app/output/index';
 import { join as p } from 'path';
-import { stdout } from 'test-console';
+import { describe, expect, it, beforeEach, test } from '@jest/globals';
 import { stripColor } from 'chalk';
 import fs from 'fs-extra-promisify';
 import { map, reduce } from 'async-array-methods';
 import globby from 'globby';
 import to from 'to-js';
+import { startCapturing, stopCapturing } from '../console';
+import { fail } from 'assert';
 
 const output_root = p(__dirname, '..', 'fixtures', 'output');
 
-const test = ava.group('output:');
+describe('output:', () => {
+  let context;
 
-test.beforeEach(async (t) => {
-  t.context = new Output({ root: output_root });
-});
-
-test('without args', async (t) => {
-  t.deepEqual(t.context.options, {
-    root: output_root,
-    log: true,
-    verbose: false,
-    spinners: true,
-    timestamp: true
+  beforeEach(() => {
+    context = new Output({ root: output_root });
   });
-  t.truthy(t.context.log_types);
-  t.deepEqual(t.context.output_options, {
-    format: 'json',
-    spacing: 2,
-    archive: '',
-    output: 'return',
-    limit: 10,
-    highlight: true,
-    server: '127.0.0.1',
-    bucket: 'default',
-    password: '',
-    username: '',
-    timeout: 5000,
+
+  it('without args', () => {
+    expect(context.options).toEqual({
+      root: output_root,
+      log: true,
+      verbose: false,
+      spinners: true,
+      timestamp: true
+    });
+    expect(context.log_types).toBeTruthy();
+    expect(context.output_options).toEqual({
+      format: 'json',
+      spacing: 2,
+      archive: '',
+      output: 'return',
+      limit: 10,
+      highlight: true,
+      server: '127.0.0.1',
+      bucket: 'default',
+      password: '',
+      username: '',
+      timeout: 5000,
+    });
   });
-});
 
-test('output_types', (t) => {
-  t.deepEqual(output_types, [ 'return', 'console', 'couchbase', 'sync-gateway' ]);
-});
+  it('output_types', () => {
+    expect(output_types).toEqual([ 'return', 'console', 'couchbase', 'sync-gateway' ]);
+  });
 
-test.group('validation', (test) => {
-  test.group('format', (test) => {
-    const passing = [ 'json', 'csv', 'yaml', 'yml', 'cson' ];
-    passing.forEach((format) => {
-      test(`passing ${format}`, (t) => {
-        t.context.output_options.format = format;
-        try {
+  describe('validation', () => {
+    describe('format', () => {
+      const passing = [ 'json', 'csv', 'yaml', 'yml', 'cson' ];
+      test.each(passing)('passing %p', (format) => {
+        context.output_options.format = format;
+        expect(() => {
           validate.format(format);
-          t.context.validateOutputOptions();
-          t.pass();
-        } catch (e) {
-          t.fail(e);
-        }
+          context.validateOutputOptions();
+        }).not.toThrow();
       });
-    });
-    const failing = [ 'jpg', 'jpeg', 'js', 'ai', 'psd' ];
-    failing.forEach((format) => {
-      test(`failing ${format}`, (t) => {
-        t.context.output_options.format = format;
+      const failing = [ 'jpg', 'jpeg', 'js', 'ai', 'psd' ];
+      test.each(failing)('failing %p', (format) => {
+        context.output_options.format = format;
         const validateFormat = () => validate.format(format);
-        t.throws(validateFormat);
-        t.throws(t.context.validateOutputOptions);
+          expect(validateFormat).toThrow();
+          expect(() => context.validateOutputOptions()).toThrow();
       });
     });
-  });
 
-  test.group('spacing', (test) => {
-    const passing = [ 0, 1, 2, 3, 4, 5, 6, 7, 8 ];
-    passing.forEach((spacing) => {
-      test(`passing ${spacing}`, (t) => {
-        t.context.output_options.spacing = spacing;
-        try {
+    describe('spacing', () => {
+      const passing = [ 0, 1, 2, 3, 4, 5, 6, 7, 8 ];
+      test.each(passing, 'passing %p', (spacing) => {
+        context.output_options.spacing = spacing;
+        expect(() => {
           validate.spacing(spacing);
-          t.context.validateOutputOptions();
-          t.pass();
-        } catch (e) {
-          t.fail(e);
-        }
+          context.validateOutputOptions();
+        }).not.toThrow();
       });
-    });
-    const failing = [ '', [], {} ];
-    failing.forEach((spacing) => {
-      test(`failing ${spacing}`, (t) => {
-        t.context.output_options.spacing = spacing;
+      const failing = [ '', [], {} ];
+      test.each(failing, 'failing %p', (spacing) => {
+        context.output_options.spacing = spacing;
         const validateSpacing = () => validate.spacing(spacing);
-        t.throws(validateSpacing);
-        t.throws(t.context.validateOutputOptions);
+          expect(validateSpacing).toThrow();
+          expect(() => context.validateOutputOptions()).toThrow();
       });
     });
-  });
 
-  test.group('output', (test) => {
-    const passing = [ 'return', 'console', 'couchbase', 'sync-gateway', 'output/folder' ];
-    passing.forEach((output) => {
-      test(`passing ${output}`, (t) => {
+    describe('output', () => {
+      const passing = [ 'return', 'console', 'couchbase', 'sync-gateway', 'output/folder' ];
+      test.each(passing)('passing %p', (output) => {
         if (output === 'sync-gateway') {
-          t.context.output_options.username = 'tyler';
-          t.context.output_options.password = 'password';
+          context.output_options.username = 'tyler';
+          context.output_options.password = 'password';
         } else if (output === 'couchbase') {
-          t.context.output_options.password = 'password';
+          context.output_options.password = 'password';
         }
-        t.context.output_options.output = output;
-        try {
+        context.output_options.output = output;
+        expect(() => {
           validate.output(output);
-          t.context.validateOutputOptions();
-          t.pass();
-        } catch (e) {
-          t.fail(e);
-        }
+          context.validateOutputOptions();
+        }).not.toThrow();
       });
-    });
-    const failing = [ 'outputfile.zip', 2, '', [], {} ];
-    failing.forEach((output) => {
-      test(`failing ${output}`, (t) => {
-        t.context.output_options.output = output;
+      const failing = [ 'outputfile.zip', 2, '', [], {} ];
+      test.each(failing)('failing %p', (output) => {
+        context.output_options.output = output;
         const validateOutput = () => validate.output(output);
-        t.throws(validateOutput);
-        t.throws(t.context.validateOutputOptions);
-      });
-    });
-  });
-
-  test.group('limit', (test) => {
-    const passing = [ 100, 200, 300, 400, 500, 600, 700, 800 ];
-    passing.forEach((limit) => {
-      test(`passing ${limit}`, (t) => {
-        t.context.output_options.limit = limit;
-        try {
-          validate.limit(limit);
-          t.context.validateOutputOptions();
-          t.pass();
-        } catch (e) {
-          t.fail(e);
-        }
-      });
-    });
-    const failing = [ '', [], {} ];
-    failing.forEach((limit) => {
-      test(`failing ${limit}`, (t) => {
-        t.context.output_options.limit = limit;
-        const validateLimit = () => validate.limit(limit);
-        t.throws(validateLimit);
-        t.throws(t.context.validateOutputOptions);
-      });
-    });
-  });
-
-  test.group('highlight', (test) => {
-    const passing = [ true, false ];
-    passing.forEach((highlight) => {
-      test(`passing ${highlight}`, (t) => {
-        t.context.output_options.highlight = highlight;
-        try {
-          validate.highlight(highlight);
-          t.context.validateOutputOptions();
-          t.pass();
-        } catch (e) {
-          t.fail(e);
-        }
-      });
-    });
-    const failing = [ 2, '', [], {} ];
-    failing.forEach((highlight) => {
-      test(`failing ${highlight}`, (t) => {
-        t.context.output_options.highlight = highlight;
-        const validateHighlight = () => validate.highlight(highlight);
-        t.throws(validateHighlight);
-        t.throws(t.context.validateOutputOptions);
-      });
-    });
-  });
-
-  test.group('archive', (test) => {
-    const passing = [ 'one.zip', '' ];
-    passing.forEach((archive) => {
-      test(`passing ${archive}`, (t) => {
-        t.context.output_options.output = 'somefolder';
-        t.context.output_options.archive = archive;
-        try {
-          validate.archive(archive, t.context.output_options);
-          t.context.validateOutputOptions();
-          t.pass();
-        } catch (e) {
-          t.fail(e);
-        }
+        expect(validateOutput).toThrow();
+        expect(() => context.validateOutputOptions()).toThrow();
       });
     });
 
-    test('passing output is return', (t) => {
-      t.context.output_options.archive = '';
-      try {
-        validate.archive(t.context.output_options.archive, t.context.output_options);
-        t.context.validateOutputOptions();
-        t.pass();
-      } catch (e) {
-        t.fail(e);
-      }
-    });
-
-    test('passing output is console', (t) => {
-      t.context.output_options.output = 'console';
-      t.context.output_options.archive = '';
-      try {
-        validate.archive(t.context.output_options.archive, t.context.output_options);
-        t.context.validateOutputOptions();
-        t.pass();
-      } catch (e) {
-        t.fail(e);
-      }
-    });
-
-    const failing = [ true, false, 2, '', [], {} ];
-    failing.forEach((archive) => {
-      test(`failing ${archive}`, (t) => {
-        t.context.output_options.archive = archive;
-        const validateArchive = () => validate.archive(archive);
-        t.throws(validateArchive);
-        t.throws(t.context.validateOutputOptions);
-      });
-    });
-
-    test('failing output is return', (t) => {
-      t.context.output_options.archive = 'somefile.zip';
-      const validateArchive = () => validate.archive(t.context.output_options.archive, t.context.output_options);
-      t.throws(validateArchive);
-      t.throws(t.context.validateOutputOptions);
-    });
-
-    test.serial('failing output because `archive` isn\'t a `.zip` file', (t) => {
-      t.context.output_options.archive = 'somefile.woohoo';
-      t.context.output_options.output = 'somefolder';
-      const validateArchive = () => validate.archive(t.context.output_options.archive, t.context.output_options);
-      const validateOutputOptions = () => t.context.validateOutputOptions();
-      const inspect = stdout.inspect();
-      t.throws(validateArchive);
-      t.throws(validateOutputOptions);
-      inspect.restore();
-    });
-
-    test('failing output is console', (t) => {
-      t.context.output_options.output = 'console';
-      t.context.output_options.archive = 'somefile.zip';
-      const validateArchive = () => validate.archive(t.context.output_options.archive, t.context.output_options);
-      t.throws(validateArchive);
-      t.throws(t.context.validateOutputOptions);
-    });
-
-    test('failing output a string wasn\'t passed as the option', (t) => {
-      t.context.output_options.output = 'test-folder';
-      t.context.output_options.archive = [];
-      const validateArchive = () => validate.archive(t.context.output_options.archive, t.context.output_options);
-      t.throws(validateArchive);
-      t.throws(t.context.validateOutputOptions);
-    });
-  });
-
-  test.group('server', (test) => {
-    const passing = [ '127.0.0.1', '127.0.0.1:8080', 'http://localhost:3000' ];
-    const servers = [ 'sync-gateway', 'couchbase', 'sync-gateway', 'couchbase' ];
-    passing.forEach((server, i) => {
-      test(`passing ${server}`, (t) => {
-        if (server !== 'couchbase') {
-          t.context.output_options.username = 'tyler';
-        }
-        t.context.output_options.password = 'password';
-        t.context.output_options.output = servers[i];
-        t.context.output_options.server = server;
-        try {
-          validate.server(server, t.context.output_options);
-          t.context.validateOutputOptions();
-          t.pass();
-        } catch (e) {
-          t.fail(e);
-        }
-      });
-    });
-
-    const failing = [ 2, '', [], {} ];
-    failing.forEach((server, i) => {
-      test(`failing ${server}`, (t) => {
-        if (server !== 'couchbase') {
-          t.context.output_options.username = 'tyler';
-        }
-        t.context.output_options.password = 'password';
-        t.context.output_options.output = servers[i];
-        t.context.output_options.server = server;
-        const validateServer = () => validate.server(server, t.context.output_options);
-        t.throws(validateServer);
-        t.throws(t.context.validateOutputOptions);
-      });
-    });
-
-    test('failing archive is true and output is couchbase', (t) => {
-      t.context.output_options.output = 'couchbase';
-      t.context.output_options.archive = true;
-      t.context.output_options.server = '127.0.0.1';
-
-      const validateServer = () => validate.server(t.context.output_options.server, t.context.output_options);
-      t.throws(validateServer);
-      t.throws(t.context.validateOutputOptions);
-    });
-
-    test('failing archive is true and output is sync-gateway', (t) => {
-      t.context.output_options.output = 'sync-gateway';
-      t.context.output_options.archive = true;
-      t.context.output_options.server = '127.0.0.1';
-      const validateServer = () => validate.server(t.context.output_options.server, t.context.output_options);
-      t.throws(validateServer);
-      t.throws(t.context.validateOutputOptions);
-    });
-  });
-
-  test.group('bucket', (test) => {
-    const passing = [ 'asdfasdfasdf', 'asdfasdfsadf', 'asfasdfasdfasdfasdf' ];
-    const servers = [ 'sync-gateway', 'couchbase', 'sync-gateway', 'couchbase' ];
-    passing.forEach((bucket, i) => {
-      test(`passing ${bucket}`, (t) => {
-        t.context.output_options.username = 'tyler';
-        t.context.output_options.password = 'password';
-        t.context.output_options.output = servers[i];
-        t.context.output_options.bucket = bucket;
-        try {
-          validate.bucket(bucket, t.context.output_options);
-          t.context.validateOutputOptions();
-          t.pass();
-        } catch (e) {
-          t.fail(e);
-        }
-      });
-    });
-
-    const failing = [ 2, '', [], {} ];
-    failing.forEach((bucket, i) => {
-      test(`failing ${bucket}`, (t) => {
-        t.context.output_options.username = 'tyler';
-        t.context.output_options.password = 'password';
-        t.context.output_options.output = servers[i];
-        t.context.output_options.bucket = bucket;
-        const validateBucket = () => validate.bucket(bucket, t.context.output_options);
-        t.throws(validateBucket);
-        t.throws(t.context.validateOutputOptions);
-      });
-    });
-  });
-
-  test.group('username', (test) => {
-    const passing = [ 'asdfasdfasdf', 'asdfasdfsadf', 'asfasdfasdfasdfasdf' ];
-    const servers = [ 'sync-gateway', 'couchbase', 'sync-gateway', 'couchbase' ];
-    passing.forEach((username, i) => {
-      test(`passing ${username}`, (t) => {
-        t.context.output_options.username = username;
-        t.context.output_options.password = 'password';
-        t.context.output_options.output = servers[i];
-        try {
-          validate.username(username, t.context.output_options);
-          t.context.validateOutputOptions();
-          t.pass();
-        } catch (e) {
-          t.fail(e);
-        }
-      });
-    });
-
-    const failing = [ 2, '', [], {} ];
-    failing.forEach((username, i) => {
-      test(`failing ${username}`, (t) => {
-        if (servers[i] !== 'couchbase') {
-          t.context.output_options.username = username;
-          t.context.output_options.password = 'password';
-          t.context.output_options.output = 'sync-gateway';
-          const validateUsername = () => validate.username(username, t.context.output_options);
-          t.throws(validateUsername);
-          t.throws(t.context.validateOutputOptions);
-        }
-      });
-    });
-  });
-
-  test.group('password', (test) => {
-    const passing = [ 'asdfasdfasdf', 'asdfasdfsadf', 'asfasdfasdfasdfasdf' ];
-    const servers = [ 'sync-gateway', 'couchbase', 'sync-gateway', 'couchbase' ];
-    passing.forEach((password, i) => {
-      test(`passing ${password}`, (t) => {
-        t.context.output_options.username = 'tyler';
-        t.context.output_options.password = password;
-        t.context.output_options.output = servers[i];
-        try {
-          validate.password(password, t.context.output_options);
-          t.context.validateOutputOptions();
-          t.pass();
-        } catch (e) {
-          t.fail(e);
-        }
-      });
-    });
-
-    const failing = [ 2, [], {} ];
-    failing.forEach((password, i) => {
-      test(`failing ${password}`, (t) => {
-        t.context.output_options.username = 'tyler';
-        t.context.output_options.password = password;
-        t.context.output_options.output = servers[i];
-        const validatePassword = () => validate.password(password, t.context.output_options);
-        t.throws(validatePassword);
-        t.throws(t.context.validateOutputOptions);
-      });
-    });
-
-    test.group('timeout', (test) => {
+    describe('limit', () => {
       const passing = [ 100, 200, 300, 400, 500, 600, 700, 800 ];
-      passing.forEach((timeout) => {
-        test(`passing ${timeout}`, (t) => {
-          t.context.output_options.timeout = timeout;
-          try {
-            validate.timeout(timeout);
-            t.context.validateOutputOptions();
-            t.pass();
-          } catch (e) {
-            t.fail(e);
+      test.each(passing)('passing %p', (limit) => {
+        context.output_options.limit = limit;
+        expect(() => {
+          validate.limit(limit);
+          context.validateOutputOptions();
+        }).not.toThrow();
+      });
+      const failing = [ '', [], {} ];
+      test.each(failing)('failing %p', (limit) => {
+        context.output_options.limit = limit;
+        const validateLimit = () => validate.limit(limit);
+        expect(validateLimit).toThrow();
+        expect(() => context.validateOutputOptions()).toThrow();
+      });
+    });
+
+    describe('highlight', () => {
+      const passing = [ true, false ];
+      test.each(passing)('passing %p', (highlight) => {
+        context.output_options.highlight = highlight;
+        expect(() => {
+          validate.highlight(highlight);
+          context.validateOutputOptions();
+        }).not.toThrow();
+      });
+      const failing = [ 2, '', [], {} ];
+      test.each(failing)('failing %p', (highlight) => {
+        context.output_options.highlight = highlight;
+        const validateHighlight = () => validate.highlight(highlight);
+        expect(validateHighlight).toThrow();
+        expect(() => context.validateOutputOptions()).toThrow();
+      });
+    });
+
+    describe('archive', () => {
+      const passing = [ 'one.zip', '' ];
+      test.each(passing)('passing %p', (archive) => {
+        context.output_options.output = 'somefolder';
+        context.output_options.archive = archive;
+        expect(() => {
+          validate.archive(archive, context.output_options);
+          context.validateOutputOptions();
+        }).not.toThrow();
+      });
+
+      it('passing output is return', () => {
+        context.output_options.archive = '';
+        expect(() => {
+          validate.archive(context.output_options.archive, context.output_options);
+          context.validateOutputOptions();
+        }).not.toThrow();
+      });
+
+      it('passing output is console', () => {
+        context.output_options.output = 'console';
+        context.output_options.archive = '';
+        expect(() => {
+          validate.archive(context.output_options.archive, context.output_options);
+          context.validateOutputOptions();
+        }).not.toThrow();
+      });
+
+      const failing = [ true, false, 2, [], {} ];
+      test.each(failing)('failing %p', (archive) => {
+        context.output_options.archive = archive;
+        const validateArchive = () => validate.archive(archive);
+        expect(validateArchive).toThrow();
+        expect(() => context.validateOutputOptions()).toThrow();
+      });
+
+      it('failing output is return', () => {
+        context.output_options.archive = 'somefile.zip';
+        const validateArchive = () => validate.archive(context.output_options.archive, context.output_options);
+        expect(validateArchive).toThrow();
+        expect(() => context.validateOutputOptions()).toThrow();
+      });
+
+      it('failing output because `archive` isn\'t a `.zip` file', () => {
+        context.output_options.archive = 'somefile.woohoo';
+        context.output_options.output = 'somefolder';
+        const validateArchive = () => validate.archive(context.output_options.archive, context.output_options);
+        const validateOutputOptions = () => context.validateOutputOptions();
+        startCapturing();
+        expect(validateArchive).toThrow();
+        expect(validateOutputOptions).toThrow();
+        const consoleOutput = stopCapturing();
+      });
+
+      it('failing output is console', () => {
+        context.output_options.output = 'console';
+        context.output_options.archive = 'somefile.zip';
+        const validateArchive = () => validate.archive(context.output_options.archive, context.output_options);
+        expect(validateArchive).toThrow();
+        expect(() => context.validateOutputOptions()).toThrow();
+      });
+
+      it('failing output a string wasn\'t passed as the option', () => {
+        context.output_options.output = 'test-folder';
+        context.output_options.archive = [];
+        const validateArchive = () => validate.archive(context.output_options.archive, context.output_options);
+        expect(validateArchive).toThrow();
+        expect(() => context.validateOutputOptions()).toThrow();
+      });
+    });
+
+    describe('server', () => {
+      const passing = [ '127.0.0.1', '127.0.0.1:8080', 'http://localhost:3000' ];
+      const servers = [ 'sync-gateway', 'couchbase', 'sync-gateway', 'couchbase' ];
+      passing.forEach((server, i) => {
+        it(`passing ${server}`, () => {
+          if (server !== 'couchbase') {
+            context.output_options.username = 'tyler';
+          }
+          context.output_options.password = 'password';
+          context.output_options.output = servers[i];
+          context.output_options.server = server;
+          expect(() => {
+            validate.server(server, context.output_options);
+            context.validateOutputOptions();
+          }).not.toThrow();
+        });
+      });
+
+      const failing = [ 2, '', [], {} ];
+      failing.forEach((server, i) => {
+        it(`failing ${server}`, () => {
+          if (server !== 'couchbase') {
+            context.output_options.username = 'tyler';
+          }
+          context.output_options.password = 'password';
+          context.output_options.output = servers[i];
+          context.output_options.server = server;
+          const validateServer = () => validate.server(server, context.output_options);
+          expect(validateServer).toThrow();
+          expect(() => context.validateOutputOptions()).toThrow();
+        });
+      });
+
+      it('failing archive is true and output is couchbase', () => {
+        context.output_options.output = 'couchbase';
+        context.output_options.archive = true;
+        context.output_options.server = '127.0.0.1';
+
+        const validateServer = () => validate.server(context.output_options.server, context.output_options);
+        expect(validateServer).toThrow();
+        expect(() => context.validateOutputOptions()).toThrow();
+      });
+
+      it('failing archive is true and output is sync-gateway', () => {
+        context.output_options.output = 'sync-gateway';
+        context.output_options.archive = true;
+        context.output_options.server = '127.0.0.1';
+        const validateServer = () => validate.server(context.output_options.server, context.output_options);
+        expect(validateServer).toThrow();
+        expect(() => context.validateOutputOptions()).toThrow();
+      });
+    });
+
+    describe('bucket', () => {
+      const passing = [ 'asdfasdfasdf', 'asdfasdfsadf', 'asfasdfasdfasdfasdf' ];
+      const servers = [ 'sync-gateway', 'couchbase', 'sync-gateway', 'couchbase' ];
+      passing.forEach((bucket, i) => {
+        it(`passing ${bucket}`, () => {
+          context.output_options.username = 'tyler';
+          context.output_options.password = 'password';
+          context.output_options.output = servers[i];
+          context.output_options.bucket = bucket;
+          expect(() => {
+            validate.bucket(bucket, context.output_options);
+            context.validateOutputOptions();
+          }).not.toThrow();
+        });
+      });
+
+      const failing = [ 2, '', [], {} ];
+      failing.forEach((bucket, i) => {
+        it(`failing ${bucket}`, () => {
+          context.output_options.username = 'tyler';
+          context.output_options.password = 'password';
+          context.output_options.output = servers[i];
+          context.output_options.bucket = bucket;
+          const validateBucket = () => validate.bucket(bucket, context.output_options);
+          expect(validateBucket).toThrow();
+          expect(() => context.validateOutputOptions()).toThrow();
+        });
+      });
+    });
+
+    describe('username', () => {
+      const passing = [ 'asdfasdfasdf', 'asdfasdfsadf', 'asfasdfasdfasdfasdf' ];
+      const servers = [ 'sync-gateway', 'couchbase', 'sync-gateway', 'couchbase' ];
+      passing.forEach((username, i) => {
+        it(`passing ${username}`, () => {
+          context.output_options.username = username;
+          context.output_options.password = 'password';
+          context.output_options.output = servers[i];
+          expect(() => {
+            validate.username(username, context.output_options);
+            context.validateOutputOptions();
+          }).not.toThrow();
+        });
+      });
+
+      const failing = [ 2, '', [], {} ];
+      failing.forEach((username, i) => {
+        it(`failing ${username}`, () => {
+          if (servers[i] !== 'couchbase') {
+            context.output_options.username = username;
+            context.output_options.password = 'password';
+            context.output_options.output = 'sync-gateway';
+            const validateUsername = () => validate.username(username, context.output_options);
+            expect(validateUsername).toThrow();
+            expect(() => context.validateOutputOptions()).toThrow();
           }
         });
       });
-      const failing = [ '', [], {} ];
-      failing.forEach((timeout) => {
-        test(`failing ${timeout}`, (t) => {
-          t.context.output_options.timeout = timeout;
-          const validateTimeout = () => validate.timeout(timeout);
-          t.throws(validateTimeout);
-          t.throws(t.context.validateOutputOptions);
+    });
+
+    describe('password', () => {
+      const passing = [ 'asdfasdfasdf', 'asdfasdfsadf', 'asfasdfasdfasdfasdf' ];
+      const servers = [ 'sync-gateway', 'couchbase', 'sync-gateway', 'couchbase' ];
+      passing.forEach((password, i) => {
+        it(`passing ${password}`, () => {
+          context.output_options.username = 'tyler';
+          context.output_options.password = password;
+          context.output_options.output = servers[i];
+          expect(() => {
+            validate.password(password, context.output_options);
+            context.validateOutputOptions();
+          }).not.toThrow();
+        });
+      });
+
+      const failing = [ 2, [], {} ];
+      failing.forEach((password, i) => {
+        it(`failing ${password}`, () => {
+          context.output_options.username = 'tyler';
+          context.output_options.password = password;
+          context.output_options.output = servers[i];
+          const validatePassword = () => validate.password(password, context.output_options);
+          expect(validatePassword).toThrow();
+          expect(() => context.validateOutputOptions()).toThrow();
+        });
+      });
+
+      describe('timeout', () => {
+        const passing = [ 100, 200, 300, 400, 500, 600, 700, 800 ];
+        passing.forEach((timeout) => {
+          it(`passing ${timeout}`, () => {
+            context.output_options.timeout = timeout;
+            expect(() => {
+              validate.timeout(timeout);
+              context.validateOutputOptions();
+            }).not.toThrow();
+          });
+        });
+        const failing = [ '', [], {} ];
+        failing.forEach((timeout) => {
+          it(`failing ${timeout}`, () => {
+            context.output_options.timeout = timeout;
+            const validateTimeout = () => validate.timeout(timeout);
+            expect(validateTimeout).toThrow();
+            expect(() => context.validateOutputOptions()).toThrow();
+          });
         });
       });
     });
-  });
 
-  test('isServer', (t) => {
-    t.truthy(isServer('sync-gateway'));
-    t.truthy(isServer('couchbase'));
-    t.falsy(isServer(''));
-    t.falsy(isServer('asdfasd'));
-    t.falsy(isServer('asdfasdasdasafsdfsd'));
-    t.falsy(isServer(2));
-  });
-
-  test('isString', (t) => {
-    t.truthy(isString('asdfasdf'));
-    t.truthy(isString('asdaffsdasdfasd'));
-    t.throws(() => isString(''));
-    t.throws(() => isString(2));
-    t.throws(() => isString([]));
-    t.throws(() => isString({}));
-  });
-});
-
-
-test.serial.group('prepare', (test) => {
-  const root = p(output_root, 'prepare');
-
-  test('without options', async (t) => {
-    t.is(t.context.prepared, false);
-    t.is(t.context.preparing, undefined);
-    const preparing = t.context.prepare();
-    t.is(typeof t.context.preparing.then, 'function');
-    t.is(t.context.prepared, false);
-    await preparing;
-    t.is(t.context.outputter, undefined);
-    t.is(t.context.prepared, true);
-  });
-
-  test('with output as console', async (t) => {
-    t.context.output_options.output = 'console';
-    t.is(t.context.prepared, false);
-    t.is(t.context.preparing, undefined);
-    const preparing = t.context.prepare();
-    t.is(typeof t.context.preparing.then, 'function');
-    t.is(t.context.prepared, false);
-    await preparing;
-    t.is(t.context.outputter.constructor.name, 'Console');
-    t.is(t.context.prepared, true);
-  });
-
-  test('zip', async (t) => {
-    t.context.options.root = root;
-    t.context.output_options.output = 'zip';
-    t.context.output_options.archive = 'archive.zip';
-    t.is(t.context.prepared, false);
-    t.is(t.context.preparing, undefined);
-    const preparing = t.context.prepare();
-    t.is(typeof t.context.preparing.then, 'function');
-    t.is(t.context.prepared, false);
-    await preparing;
-    t.is(t.context.outputter.constructor.name, 'Zip');
-    t.is(to.type(t.context.outputter.zip), 'object');
-    t.is(t.context.prepared, true);
-    t.deepEqual(await globby('zip', { cwd: root }), [ 'zip' ]);
-    t.deepEqual(await globby(p('zip', '**', '*'), { cwd: root }), []);
-  });
-
-  test('folder', async (t) => {
-    t.context.options.root = root;
-    t.context.output_options.output = 'folder';
-    t.is(t.context.prepared, false);
-    t.is(t.context.preparing, undefined);
-    const preparing = t.context.prepare();
-    t.is(typeof t.context.preparing.then, 'function');
-    t.is(t.context.prepared, false);
-    await preparing;
-    t.is(t.context.outputter.constructor.name, 'Folder');
-    t.is(t.context.prepared, true);
-    t.deepEqual(await globby('folder', { cwd: root }), [ 'folder' ]);
-    t.deepEqual(await globby(p('folder', '**', '*'), { cwd: root }), []);
-  });
-
-  test.after.always(() => fs.remove(root));
-});
-
-
-test.serial.group('setup', (test) => {
-  test('without options', async (t) => {
-    t.is(t.context.prepared, false);
-    t.is(t.context.preparing, undefined);
-    const preparing = t.context.setup();
-    t.is(typeof t.context.preparing.then, 'function');
-    t.is(t.context.prepared, false);
-    await preparing;
-    t.is(t.context.outputter, undefined);
-    t.is(t.context.prepared, true);
-  });
-
-  test('with output as console', async (t) => {
-    t.context.output_options.output = 'console';
-    t.is(t.context.prepared, false);
-    t.is(t.context.preparing, undefined);
-    const preparing = t.context.setup();
-    t.is(typeof t.context.preparing.then, 'function');
-    t.is(t.context.prepared, false);
-    await preparing;
-    t.is(t.context.outputter.constructor.name, 'Console');
-    t.is(t.context.prepared, true);
-  });
-});
-
-
-test.group('output', (test) => {
-  const root = p(output_root, 'output');
-  let data;
-
-  test.before(async () => {
-    data = await getData();
-  });
-
-  test.serial.group('return', languages((test, language) => {
-    test(language, async (t) => {
-      const { raw, node } = data[language];
-      t.context.output_options.output = 'return';
-      t.context.output_options.format = language;
-      t.is(t.context.prepared, false);
-      t.is(t.context.preparing, undefined);
-      const actual = await t.context.output(raw);
-      t.is(t.context.prepared, true);
-      t.deepEqual(actual, node);
+    it('isServer', () => {
+      expect(isServer('sync-gateway')).toBeTruthy();
+      expect(isServer('couchbase')).toBeTruthy();
+      expect(isServer('')).toBeFalsy();
+      expect(isServer('asdfasd')).toBeFalsy();
+      expect(isServer('asdfasdasdasafsdfsd')).toBeFalsy();
+      expect(isServer(2)).toBeFalsy();
     });
-  }));
 
-  test.serial.group('console', languages((test, language) => {
-    test(language, async (t) => {
-      const { raw, node } = data[language];
-      t.context.output_options.output = 'console';
-      t.context.output_options.format = language;
-      t.is(t.context.prepared, false);
-      t.is(t.context.preparing, undefined);
-      const inspect = stdout.inspect();
-      await t.context.output(raw);
-      t.is(t.context.prepared, true);
-      inspect.restore();
-      t.not(inspect.output[0].trim(), node);
-      if (language !== 'csv') {
-        t.is(stripColor(inspect.output[0]).trim(), node);
-      }
+    it('isString', () => {
+      expect(isString('asdfasdf')).toBeTruthy();
+      expect(isString('asdaffsdasdfasd')).toBeTruthy();
+      expect(() => isString('')).toThrow();
+      expect(() => isString(2)).toThrow();
+      expect(() => isString([])).toThrow();
+      expect(() => isString({})).toThrow();
     });
-  }));
+  });
 
-  test.group('folder', languages((test, language) => {
-    test(language, async (t) => {
-      const { raw, nodes } = data[language];
-      const keys = to.keys(nodes).sort();
-      t.plan(keys.length + 4);
-      // change the root folder to be under folder so it's easier
-      // to remove the tests for `folder` after they're done.
-      t.context.options.root = p(root, 'folder');
-      const output = t.context.output_options.format = t.context.output_options.output = language;
-      t.is(t.context.prepared, false);
-      t.is(t.context.preparing, undefined);
-      await t.context.output(raw);
-      t.is(t.context.prepared, true);
 
-      // ge all the files in the output folder
-      const files = await globby('*', { cwd: p(root, 'folder', output) });
+  describe('prepare', () => {
+    const root = p(output_root, 'prepare');
 
-      // all the files exist
-      t.deepEqual(files.map((file) => file.split('.')[0]).sort(), keys);
+    it('without options', async () => {
+      expect(context.prepared).toBe(false);
+      expect(context.preparing).toBeUndefined();
+      const preparing = context.prepare();
+      expect(typeof context.preparing.then).toBe('function');
+      expect(context.prepared).toBe(false);
+      await preparing;
+      expect(context.outputter).toBeUndefined();
+      expect(context.prepared).toBe(true);
+    });
 
-      // this ensures that all the files match the correct output
-      await map(files, async (file) => {
-        const content = to.string(await fs.readFile(p(root, 'folder', output, file))).trim();
-        const name = file.split('.')[0];
-        t.deepEqual(content, nodes[name]);
+    it('with output as console', async () => {
+      context.output_options.output = 'console';
+      expect(context.prepared).toBe(false);
+      expect(context.preparing).toBeUndefined();
+      const preparing = context.prepare();
+      expect(typeof context.preparing.then).toBe('function');
+      expect(context.prepared).toBe(false);
+      await preparing;
+      expect(context.outputter.constructor.name).toBe('Console');
+      expect(context.prepared).toBe(true);
+    });
+
+    it('zip', async () => {
+      context.options.root = root;
+      context.output_options.output = 'zip';
+      context.output_options.archive = 'archive.zip';
+      expect(context.prepared).toBe(false);
+      expect(context.preparing).toBeUndefined();
+      const preparing = context.prepare();
+      expect(typeof context.preparing.then).toBe('function');
+      expect(context.prepared).toBe(false);
+      await preparing;
+      expect(context.outputter.constructor.name).toBe('Zip');
+      expect(to.type(context.outputter.zip)).toBe('object');
+      expect(context.prepared).toBe(true);
+      expect(await globby('zip', { cwd: root })).toEqual([ 'zip' ]);
+      expect(await globby(p('zip', '**', '*'), { cwd: root })).toEqual([]);
+    });
+
+    it('folder', async () => {
+      context.options.root = root;
+      context.output_options.output = 'folder';
+      expect(context.prepared).toBe(false);
+      expect(context.preparing).toBeUndefined();
+      const preparing = context.prepare();
+      expect(typeof context.preparing.then).toBe('function');
+      expect(context.prepared).toBe(false);
+      await preparing;
+      expect(context.outputter.constructor.name).toBe('Folder');
+      expect(context.prepared).toBe(true);
+      expect(await globby('folder', { cwd: root })).toEqual([ 'folder' ]);
+      expect(await globby(p('folder', '**', '*'), { cwd: root })).toEqual([]);
+    });
+
+    afterAll(() => fs.remove(root));
+  });
+
+
+  describe('setup', () => {
+    it('without options', async () => {
+      expect(context.prepared).toBe(false);
+      expect(context.preparing).toBeUndefined();
+      const preparing = context.setup();
+      expect(typeof context.preparing.then).toBe('function');
+      expect(context.prepared).toBe(false);
+      await preparing;
+      expect(context.outputter).toBeUndefined();
+      expect(context.prepared).toBe(true);
+    });
+
+    it('with output as console', async () => {
+      context.output_options.output = 'console';
+      expect(context.prepared).toBe(false);
+      expect(context.preparing).toBeUndefined();
+      const preparing = context.setup();
+      expect(typeof context.preparing.then).toBe('function');
+      expect(context.prepared).toBe(false);
+      await preparing;
+      expect(context.outputter.constructor.name).toBe('Console');
+      expect(context.prepared).toBe(true);
+    });
+  });
+
+
+  describe('output', () => {
+    const root = p(output_root, 'output');
+    let data;
+
+    beforeAll(async () => {
+      data = await getData();
+    });
+
+    describe('return', () => {
+      languages((language) => {
+        it(language, async () => {
+          const { raw, node } = data[language];
+          context.output_options.output = 'return';
+          context.output_options.format = language;
+          expect(context.prepared).toBe(false);
+          expect(context.preparing).toBeUndefined();
+          const actual = await context.output(raw);
+          expect(context.prepared).toBe(true);
+          expect(actual).toEqual(node);
+        });
       });
     });
-  }));
 
-
-  test.group('zip', languages((test, language) => {
-    if (language !== 'json') {
-      return;
-    }
-    test(language, async (t) => {
-      const { raw, nodes } = data[language];
-      const keys = to.keys(nodes).sort();
-
-      // change the root folder to be under folder so it's easier
-      // to remove the tests for `folder` after they're done.
-      t.context.options.root = p(root, 'zip');
-      t.context.output_options.format = t.context.output_options.output = language;
-      t.context.output_options.archive = `${language}.zip`;
-      t.is(t.context.prepared, false);
-      t.is(t.context.preparing, undefined);
-      await t.context.output(raw);
-      t.is(t.context.prepared, true);
-      t.is(to.type(t.context.outputter.zip), 'object');
-      const files = t.context.outputter.zip.getEntries().map(({ name }) => name.split('.')[0]);
-      t.deepEqual(files.sort(), keys);
+    describe('console', () => {
+      languages((language) => {
+        it(language, async () => {
+          const { raw, node } = data[language];
+          context.output_options.output = 'console';
+          context.output_options.format = language;
+          expect(context.prepared).toBe(false);
+          expect(context.preparing).toBeUndefined();
+          startCapturing();
+          await context.output(raw);
+          const consoleOutput = stopCapturing();
+          expect(context.prepared).toBe(true);
+          expect(consoleOutput[0].trim()).not.toBe(node);
+          if (language !== 'csv') {
+            expect(stripColor(consoleOutput[0]).trim()).toBe(node);
+          }
+        });
+      });
     });
-  }));
+
+    describe('folder', () => {
+      languages((language) => {
+        it(language, async () => {
+          const { raw, nodes } = data[language];
+          const keys = to.keys(nodes).sort();
+          expect.assertions(keys.length + 4);
+          // change the root folder to be under folder so it's easier
+          // to remove the tests for `folder` after they're done.
+          context.options.root = p(root, 'folder');
+          const output = context.output_options.format = context.output_options.output = language;
+          expect(context.prepared).toBe(false);
+          expect(context.preparing).toBeUndefined();
+          await context.output(raw);
+          expect(context.prepared).toBe(true);
+
+          // ge all the files in the output folder
+          const files = await globby('*', { cwd: p(root, 'folder', output) });
+
+          // all the files exist
+          expect(files.map((file) => file.split('.')[0]).sort()).toEqual(keys);
+
+          // this ensures that all the files match the correct output
+          await map(files, async (file) => {
+            const content = to.string(await fs.readFile(p(root, 'folder', output, file))).trim();
+            const name = file.split('.')[0];
+            expect(content).toEqual(nodes[name]);
+          });
+        });
+      });
+    });
 
 
-  test('throws error', async (t) => {
-    t.context.output_options.output = p(root, 'error-folder');
-    await t.context.prepare();
-    t.context.outputter.output = function output() {
-      throw new Error('failed correctly');
-    };
-    const inspect = stdout.inspect();
+    describe('zip', () => {
+      languages((language) => {
+        if (language !== 'json') {
+          return;
+        }
+        it(language, async () => {
+          const { raw, nodes } = data[language];
+          const keys = to.keys(nodes).sort();
 
-    await t.context.output(data.json.raw)
-      .then(() => t.fail())
-      .catch(() => t.pass());
-    inspect.restore();
-    t.truthy(/\[?Error: failed correctly\]?/.test(inspect.output[1].split(/\n/)[0].trim()));
+          // change the root folder to be under folder so it's easier
+          // to remove the tests for `folder` after they're done.
+          context.options.root = p(root, 'zip');
+          context.output_options.format = context.output_options.output = language;
+          context.output_options.archive = `${language}.zip`;
+          expect(context.prepared).toBe(false);
+          expect(context.preparing).toBeUndefined();
+          await context.output(raw);
+          expect(context.prepared).toBe(true);
+          expect(to.type(context.outputter.zip)).toBe('object');
+          const files = context.outputter.zip.getEntries().map(({ name }) => name.split('.')[0]);
+          expect(files.sort()).toEqual(keys);
+        });
+      });
+    });
+
+
+    it('throws error', async () => {
+      context.output_options.output = p(root, 'error-folder');
+      await context.prepare();
+      context.outputter.output = function output() {
+        throw new Error('failed correctly');
+      };
+      startCapturing();
+
+      await context.output(data.json.raw)
+        .then(() => fail('should have thrown'))
+        .catch(() => {});
+      const consoleOutput = stopCapturing();
+      expect(consoleOutput[1].split(/\n/)[0].trim()).toMatch(/\[?Error: failed correctly\]?/);
+    });
+
+    // These are too difficult to unit test but they are tested else where
+    // describe('couchbase', () => {
+    //   it.todo();
+    // });
+    //
+    // describe('sync-gateway', () => {
+    //   it.todo();
+    // });
+
+    afterAll(() => fs.remove(root));
   });
-
-  // These are too difficult to unit test but they are tested else where
-  // test.group('couchbase', (test) => {
-  //   test.todo();
-  // });
-  //
-  // test.group('sync-gateway', (test) => {
-  //   test.todo();
-  // });
-
-  test.after.always(() => fs.remove(root));
 });
 
 // This will loop through each of the languages to run tests for each one.
 // It makes it easier to test each language for each type of output rather
 // than duplicating the loop on each test
 function languages(cb) {
-  return (test) => {
-    for (let language of [ 'cson', 'csv', 'json', 'yaml', 'yml' ]) {
-      cb(test, language);
-    }
-  };
+  for (let language of [ 'cson', 'csv', 'json', 'yaml', 'yml' ]) {
+    cb(language);
+  }
 }
 
 
@@ -713,7 +657,7 @@ async function getData() {
     if (next === 'json') {
       data.node = to.json(raw);
     } else {
-      data.node = to.string(await fs.readFile(file)).trim();
+      data.node = to.string(await fs.readFile(file)).trim().replace(/\r\n/g, '\n');
     }
 
     switch (next) {

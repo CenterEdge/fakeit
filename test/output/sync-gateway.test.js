@@ -1,81 +1,86 @@
  
 import to from 'to-js';
-import proxyquire from 'proxyquire';
-import req from 'request';
-function mockRequest(options, callback) {
-  callback(null, { headers: { 'set-cookie': true } }, { ok: true });
-}
-to.extend(mockRequest, req);
-const { request, default: SyncGateway } = proxyquire('../../dist/output/sync-gateway', { request: mockRequest });
-import default_options from '../../dist/output/default-options';
-import ava from 'ava-spec';
+import default_options from '../../app/output/default-options';
 
-const test = ava.group('output:sync-gateway');
-
-test.beforeEach((t) => {
-  t.context = new SyncGateway();
+jest.mock('request', () => {
+  const req = jest.requireActual('request');
+  const mockRequest = (options, callback) => {
+    callback(null, { headers: { 'set-cookie': true } }, { ok: true });
+  };
+  return Object.assign(mockRequest, req);
 });
 
-test('without args', (t) => {
-  t.deepEqual(t.context.output_options, default_options);
-  t.is(t.context.prepared, false);
-  t.is(typeof t.context.prepare, 'function');
-  t.is(typeof t.context.output, 'function');
-});
+import SyncGateway, { request } from '../../app/output/sync-gateway';
 
-test.group('prepare', (test) => {
-  test('no username and password', async (t) => {
-    t.context.output_options.bucket = 'prepare';
-    t.is(t.context.prepared, false);
-    t.is(t.context.preparing, undefined);
-    const preparing = t.context.prepare();
-    t.is(typeof t.context.preparing.then, 'function');
-    t.is(t.context.prepared, false);
-    await preparing;
-    t.is(t.context.prepared, true);
-  });
-});
+describe('output:sync-gateway', () => {
+  let context;
 
-test.serial.group('setup', (test) => {
-  test('no username and password', async (t) => {
-    t.context.output_options.bucket = 'setup';
-    t.is(t.context.prepared, false);
-    t.is(t.context.preparing, undefined);
-    const preparing = t.context.setup();
-    t.is(typeof t.context.preparing.then, 'function');
-    t.is(t.context.prepared, false);
-    await preparing;
-    t.is(t.context.prepared, true);
+  beforeEach(() => {
+    context = new SyncGateway();
   });
 
-  // NO IDEA HOW THE HELL TO WRITE UNIT TESTS FOR THIS CRAP
-  test.skip('authentication', async (t) => {
-    t.context.output_options.bucket = 'setup';
-    t.context.output_options.username = 'Administrator';
-    t.context.output_options.password = 'password';
-    t.is(t.context.prepared, false);
-    t.is(t.context.preparing, undefined);
-    const preparing = t.context.setup();
-    t.is(typeof t.context.preparing.then, 'function');
-    t.is(t.context.prepared, false);
-    await preparing;
-    t.is(t.context.prepared, true);
+  test('without args', () => {
+    expect(context.output_options).toEqual(default_options);
+    expect(context.prepared).toBe(false);
+    expect(typeof context.prepare).toBe('function');
+    expect(typeof context.output).toBe('function');
   });
-});
 
-test.group('output', (test) => {
-  // currently can't test this
-  test.todo();
-});
+  describe('prepare', () => {
+    test('no username and password', async () => {
+      context.output_options.bucket = 'prepare';
+      expect(context.prepared).toBe(false);
+      expect(context.preparing).toBe(undefined);
+      const preparing = context.prepare();
+      expect(typeof context.preparing.then).toBe('function');
+      expect(context.prepared).toBe(false);
+      await preparing;
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(context.prepared).toBe(true);
+    });
+  });
 
-// this is just calling another library and it's just converting
-// it's callback style to a promise style so we just need to ensure
-// it's a promise.
-test('request', async (t) => {
-  let actual = request('localhost:3000');
-  t.is(typeof actual.then, 'function');
-  actual = await actual;
-  t.is(to.type(actual), 'array');
-  t.is(to.type(actual[0]), 'object');
-  t.is(to.type(actual[1]), 'object');
+  describe('setup', () => {
+    test('no username and password', async () => {
+      context.output_options.bucket = 'setup';
+      expect(context.prepared).toBe(false);
+      expect(context.preparing).toBe(undefined);
+      const preparing = context.setup();
+      expect(typeof context.preparing.then).toBe('function');
+      expect(context.prepared).toBe(false);
+      await preparing;      await new Promise((resolve) => setImmediate(resolve));      await new Promise((resolve) => setImmediate(resolve));
+      expect(context.prepared).toBe(true);
+    });
+
+    // NO IDEA HOW THE HELL TO WRITE UNIT TESTS FOR THIS CRAP
+    test.skip('authentication', async () => {
+      context.output_options.bucket = 'setup';
+      context.output_options.username = 'Administrator';
+      context.output_options.password = 'password';
+      expect(context.prepared).toBe(false);
+      expect(context.preparing).toBe(undefined);
+      const preparing = context.setup();
+      expect(typeof context.preparing.then).toBe('function');
+      expect(context.prepared).toBe(false);
+      await preparing;
+      expect(context.prepared).toBe(true);
+    });
+  });
+
+  describe('output', () => {
+    // currently can't test this
+    test.todo('output test');
+  });
+
+  // this is just calling another library and it's just converting
+  // it's callback style to a promise style so we just need to ensure
+  // it's a promise.
+  test('request', async () => {
+    let actual = request('localhost:3000');
+    expect(typeof actual.then).toBe('function');
+    actual = await actual;
+    expect(to.type(actual)).toBe('array');
+    expect(to.type(actual[0])).toBe('object');
+    expect(to.type(actual[1])).toBe('object');
+  });
 });

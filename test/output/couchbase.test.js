@@ -1,59 +1,96 @@
- 
+jest.mock('couchbase-promises', () => {
+  class MockBucket {
+    constructor() {
+      this._store = {};
+      this.operationTimeout = 5000;
+    }
+    upsertAsync(id, data) {
+      this._store[id] = data;
+      return Promise.resolve();
+    }
+    getAsync(id) {
+      return Promise.resolve({ value: this._store[id] });
+    }
+    disconnect() {
+      return Promise.resolve();
+    }
+  }
 
-import Couchbase from '../../dist/output/couchbase';
+  class MockCluster {
+    constructor() {
+      this._buckets = {};
+    }
+    authenticate() {}
+    openBucket(name, callback) {
+      if (!this._buckets[name]) {
+        this._buckets[name] = new MockBucket();
+      }
+      const bucket = this._buckets[name];
+      process.nextTick(() => {
+        callback(null);
+      });
+      return bucket;
+    }
+  }
+
+  const mock = { Cluster: MockCluster, Mock: { Cluster: MockCluster } };
+  mock.default = mock;
+  return mock;
+});
+
+import Couchbase from '../../app/output/couchbase';
 import couchbase from 'couchbase-promises';
-import default_options from '../../dist/output/default-options';
+import default_options from '../../app/output/default-options';
 import to from 'to-js';
-import ava from 'ava-spec';
 
-const test = ava.group('output:couchbase');
+describe('output:couchbase', () => {
+  let context;
 
-test.beforeEach((t) => {
-  t.context = new Couchbase();
-  // this replaces the original cluster with the mock cluster that doesn't require
-  // an actual server to be running, this way it's easy to test the functionality
-  // of our functions and not couchbases functions.
-  t.context.cluster = new couchbase.Mock.Cluster(t.context.output_options.server);
-});
-
-
-test('without args', (t) => {
-  t.deepEqual(t.context.output_options, default_options);
-  t.is(t.context.prepared, false);
-  t.is(typeof t.context.prepare, 'function');
-  t.is(typeof t.context.output, 'function');
-  t.is(t.context.cluster.constructor.name, 'MockCluster');
-});
-
-test('prepare', async (t) => {
-  t.is(t.context.prepared, false);
-  t.is(t.context.preparing, undefined);
-  const preparing = t.context.prepare();
-  t.is(typeof t.context.preparing.then, 'function');
-  t.is(t.context.prepared, false);
-  await preparing;
-  t.is(t.context.prepared, true);
-  t.is(to.type(t.context.bucket), 'object');
-  t.is(t.context.bucket.connected, true);
-});
-
-test.group('setup', (test) => {
-  test(async (t) => {
-    t.is(t.context.prepared, false);
-    t.is(t.context.preparing, undefined);
-    const preparing = t.context.setup();
-    t.is(typeof t.context.preparing.then, 'function');
-    t.is(t.context.prepared, false);
-    t.falsy(await preparing);
-    t.is(t.context.prepared, true);
-    t.is(to.type(t.context.bucket), 'object');
-    t.is(t.context.bucket.connected, true);
+  beforeEach(() => {
+    context = new Couchbase();
+    // this replaces the original cluster with the mock cluster that doesn't require
+    // an actual server to be running, this way it's easy to test the functionality
+    // of our functions and not couchbases functions.
+    context.cluster = new couchbase.Mock.Cluster(context.output_options.server);
   });
-});
 
-test.group('output', (test) => {
-  const languages = {
-    cson: to.normalize(`
+  test('without args', () => {
+    expect(context.output_options).toEqual(default_options);
+    expect(context.prepared).toBe(false);
+    expect(typeof context.prepare).toBe('function');
+    expect(typeof context.output).toBe('function');
+    expect(context.cluster.constructor.name).toBe('MockCluster');
+  });
+
+  test('prepare', async () => {
+    expect(context.prepared).toBe(false);
+    expect(context.preparing).toBe(undefined);
+    const preparing = context.prepare();
+    expect(typeof context.preparing.then).toBe('function');
+    expect(context.prepared).toBe(false);
+    await preparing;
+    expect(context.prepared).toBe(true);
+    expect(to.type(context.bucket)).toBe('object');
+    expect(context.bucket.connected).toBe(true);
+  });
+
+  describe('setup', () => {
+    test('setup', async () => {
+      expect(context.prepared).toBe(false);
+      expect(context.preparing).toBe(undefined);
+      const preparing = context.setup();
+      expect(typeof context.preparing.then).toBe('function');
+      expect(context.prepared).toBe(false);
+      expect(await preparing).toBeFalsy();
+      expect(context.prepared).toBe(true);
+      expect(to.type(context.bucket)).toBe('object');
+      expect(context.bucket.connected).toBe(true);
+    });
+  });
+
+  describe('output', () => {
+    const languages = {
+      cson: to.normalize(`
       [
         {
           id: 302672
@@ -69,7 +106,7 @@ test.group('output', (test) => {
         }
       ]
     `),
-    csv: to.normalize(`
+      csv: to.normalize(`
       id,code,name,continent
       302672,AD,Andorra,EU
       302618,AE,United Arab Emirates,AS
@@ -88,21 +125,21 @@ test.group('output', (test) => {
       302621,AZ,Azerbaijan,AS
       302675,BA,Bosnia and Herzegovina,EU
     `),
-    json: to.json([
-      {
-        id: 302672,
-        code: 'AD',
-        name: 'Andorra',
-        continent: 'EU'
-      },
-      {
-        id: 302618,
-        code: 'AE',
-        name: 'United Arab Emirates',
-        continent: 'AS'
-      },
-    ]),
-    yaml: to.normalize(`
+      json: to.json([
+        {
+          id: 302672,
+          code: 'AD',
+          name: 'Andorra',
+          continent: 'EU'
+        },
+        {
+          id: 302618,
+          code: 'AE',
+          name: 'United Arab Emirates',
+          continent: 'AS'
+        },
+      ]),
+      yaml: to.normalize(`
       -
         id: 302672
         code: AD
@@ -119,54 +156,55 @@ test.group('output', (test) => {
         name: Afghanistan
         continent: AS
     `)
-  };
+    };
 
-  for (let language of to.keys(languages)) {
-    const data = languages[language];
-    test(language, async (t) => {
-      t.context.output_options.bucket = `output-${language}`;
+    for (let language of to.keys(languages)) {
+      const data = languages[language];
+      test(language, async () => {
+        context.output_options.bucket = `output-${language}`;
+        const id = `1234567890-${language}`;
+        context.output_options.format = language;
+        await context.output(id, data);
+        const document = await context.bucket.getAsync(id);
+        expect(document).not.toBe(null);
+        expect(document.value).toEqual(data);
+      });
+    }
+
+    test('prepare has started but isn\'t complete', async () => {
+      const language = 'json';
+      const data = languages[language];
+      context.output_options.bucket = `output-${language}`;
       const id = `1234567890-${language}`;
-      t.context.output_options.format = language;
-      await t.context.output(id, data);
-      const document = await t.context.bucket.getAsync(id);
-      t.not(document, null);
-      t.deepEqual(document.value, data);
+      context.output_options.format = language;
+      context.prepare();
+      await context.output(id, data);
+      const document = await context.bucket.getAsync(id);
+      expect(document).not.toBe(null);
+      expect(document.value).toEqual(data);
     });
-  }
-
-  test('prepare has started but isn\'t complete', async (t) => {
-    const language = 'json';
-    const data = languages[language];
-    t.context.output_options.bucket = `output-${language}`;
-    const id = `1234567890-${language}`;
-    t.context.output_options.format = language;
-    t.context.prepare();
-    await t.context.output(id, data);
-    const document = await t.context.bucket.getAsync(id);
-    t.not(document, null);
-    t.deepEqual(document.value, data);
-  });
-});
-
-test.group('finalize', (test) => {
-  test('do nothing because prepare wasn\'t called before finalize', async (t) => {
-    await t.context.finalize();
-    t.is(t.context.bucket, undefined);
-    t.is(t.context.prepared, false);
-    t.is(t.context.preparing, undefined);
   });
 
-  test('disconnected', async (t) => {
-    t.context.output_options.bucket = 'finalize';
-    await t.context.prepare();
-    t.is(to.type(t.context.bucket), 'object');
-    t.is(t.context.prepared, true);
-    t.is(typeof t.context.preparing.then, 'function');
-    t.is(t.context.bucket.connected, true);
-    await t.context.finalize();
-    t.is(to.type(t.context.bucket), 'object');
-    t.is(t.context.prepared, true);
-    t.is(typeof t.context.preparing.then, 'function');
-    t.is(t.context.bucket.connected, false);
+  describe('finalize', () => {
+    test('do nothing because prepare wasn\'t called before finalize', async () => {
+      await context.finalize();
+      expect(context.bucket).toBe(undefined);
+      expect(context.prepared).toBe(false);
+      expect(context.preparing).toBe(undefined);
+    });
+
+    test('disconnected', async () => {
+      context.output_options.bucket = 'finalize';
+      await context.prepare();
+      expect(to.type(context.bucket)).toBe('object');
+      expect(context.prepared).toBe(true);
+      expect(typeof context.preparing.then).toBe('function');
+      expect(context.bucket.connected).toBe(true);
+      await context.finalize();
+      expect(to.type(context.bucket)).toBe('object');
+      expect(context.prepared).toBe(true);
+      expect(typeof context.preparing.then).toBe('function');
+      expect(context.bucket.connected).toBe(false);
+    });
   });
 });

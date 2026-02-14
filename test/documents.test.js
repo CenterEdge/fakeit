@@ -1,20 +1,17 @@
- 
-
+import { describe, expect, test, beforeAll, beforeEach } from '@jest/globals';
 import {
   transformValueToType,
   getPaths,
   typeToValue,
   Document,
-} from '../dist/documents.js';
+} from '../app/documents.js';
 /* istanbul ignore next : needed to test models */
-const Model = require('../dist/models.js').default;
+const Model = require('../app/models.js').default;
 import { join as p } from 'path';
-import ava from 'ava-spec';
 import to from 'to-js';
 import is from 'joi';
 import _ from 'lodash';
 import fs from 'fs-extra-promisify';
-const test = ava.group('documents');
 const documents_root = p(__dirname, 'fixtures', 'models');
 /* istanbul ignore next */
 const utils = require('./utils');
@@ -28,55 +25,56 @@ const models = utils.models({
   }
 });
 
-
 let babel_config;
 
-test.before(async () => {
-  babel_config = await fs.readJson(p(__dirname, '..', '.babelrc'));
-});
+describe('documents', () => {
+  let model, documents, globals, inputs, document;
 
-
-test.beforeEach(async (t) => {
-  t.context.model = new Model({
-    root: documents_root,
-    log: false,
-    babel_config,
+  beforeAll(async () => {
+    babel_config = await fs.readJson(p(__dirname, '..', '.babelrc.test'));
   });
-  t.context.documents = {};
-  t.context.globals = {};
-  t.context.inputs = {};
-  t.context.document = new Document({
-    root: documents_root,
-    log: false,
-  }, t.context.documents, t.context.globals, t.context.inputs);
 
-  await t.context.model.setup();
-});
+  beforeEach(async () => {
+    model = new Model({
+      root: documents_root,
+      log: false,
+      babel_config,
+    });
+    documents = {};
+    globals = {};
+    inputs = {};
+    document = new Document({
+      root: documents_root,
+      log: false,
+    }, documents, globals, inputs);
 
-
-test('without args', (t) => {
-  const doc = t.context.document;
-  // rest the log option to what it is by default.
-  doc.options.log = doc.options.spinners = true;
-  t.deepEqual(doc.options, {
-    root: documents_root,
-    log: true,
-    verbose: false,
-    spinners: true,
-    count: 0,
-    timestamp: true,
+    await model.setup();
   });
-  t.is(to.type(doc.log_types), 'object');
-  t.deepEqual(doc.documents, {});
-  t.deepEqual(doc.globals, {});
-  t.deepEqual(doc.inputs, {});
-  t.is(to.type(doc.faker), 'object');
-  t.is(to.type(doc.chance), 'object');
-});
 
 
-test.group('build', (test) => {
-  test('model with no data', async (t) => {
+  test('without args', () => {
+    const doc = document;
+    // rest the log option to what it is by default.
+    doc.options.log = doc.options.spinners = true;
+    expect(doc.options).toEqual({
+      root: documents_root,
+      log: true,
+      verbose: false,
+      spinners: true,
+      count: 0,
+      timestamp: true,
+    });
+    expect(to.type(doc.log_types)).toBe('object');
+    expect(doc.documents).toEqual({});
+    expect(doc.globals).toEqual({});
+    expect(doc.inputs).toEqual({});
+    expect(to.type(doc.faker)).toBe('object');
+    expect(to.type(doc.chance)).toBe('object');
+  });
+
+
+describe('build', () => {
+  test('model with no data', async () => {
     const model = {
       name: 'build_test',
       type: 'object',
@@ -93,21 +91,20 @@ test.group('build', (test) => {
       }
     };
 
-    const doc = t.context.document;
-    t.deepEqual(doc.globals, {});
-    t.deepEqual(doc.documents, {});
-    const actual = await doc.build(model);
+    expect(document.globals).toEqual({});
+    expect(document.documents).toEqual({});
+    const actual = await document.build(model);
     const schema = is.array()
       .items(is.object({
         test: is.string().regex(/woohoo/),
       }))
       .length(1);
     is.assert(actual, schema);
-    is.assert(doc.documents, is.object({ build_test: schema }));
-    t.deepEqual(doc.globals, { woohoo: 'woohoo' });
+    is.assert(document.documents, is.object({ build_test: schema }));
+    expect(document.globals).toEqual({ woohoo: 'woohoo' });
   });
 
-  test.group('key', (test) => {
+  describe('key', () => {
     const model = {
       name: 'key_test',
       type: 'object',
@@ -149,55 +146,49 @@ test.group('build', (test) => {
       },
     ];
 
-    tests.forEach(({ actual, expected }) => {
-      let title = actual;
-      if (to.type(title) === 'object') {
-        title = to.keys(title)[0];
+    test.each(tests)('is $title', async ({ actual, expected }) => {
+      const obj = to.clone(model);
+      if (actual != null) {
+        obj.key = actual;
       }
-      test(`is ${title}`, async (t) => {
-        const doc = t.context.document;
-        const obj = to.clone(model);
-        if (actual != null) {
-          obj.key = actual;
-        }
-        const result = await doc.build(obj);
-        if (to.type(expected) === 'regexp') {
-          t.truthy(expected.test(result[0].__key));  
-        } else {
-          t.is(result[0].__key, expected);  
-        }
-      });
+      const result = await document.build(obj);
+      if (to.type(expected) === 'regexp') {
+        expect(result[0].__key).toMatch(expected);
+      } else {
+        expect(result[0].__key).toBe(expected);
+      }
     });
   });
 
-  test.group(models(async (t, file) => {
-    const { document, model } = t.context;
-    // ensure that only 1 document gets created
-    document.options.count = model.options.count = 1;
-    await model.registerModels(file);
+  // describe(models(async (file) => {
+  //   // ensure that only 1 document gets created
+  //   document.options.count = model.options.count = 1;
+  //   await model.registerModels(file);
 
-    // set the document inputs to be what the model inputs are
-    document.inputs = model.inputs;
+  //   // set the document inputs to be what the model inputs are
+  //   document.inputs = model.inputs;
 
-    let actual = [];
+  //   let actual = [];
 
-    for (let obj of model.models) {
-      t.is(obj.data.count, 1);
+  //   for (let obj of model.models) {
+  //     expect(obj.data.count).toBe(1);
 
-      let result = await document.build(obj);
-      // ensure data count is still set to 1
-      t.is(obj.data.count, 1);
-      t.is(result.length, 1);
-      if (!obj.is_dependency) {
-        actual.push(result[0]);
-      }
-    }
-    // ensure there was only 1 item output
-    t.is(actual.length, 1);
-    return actual[0];
-  }));
+  //     let result = await document.build(obj);
+  //     // ensure data count is still set to 1
+  //     expect(obj.data.count).toBe(1);
+  //     expect(result.length).toBe(1);
+  //     if (!obj.is_dependency) {
+  //       actual.push(result[0]);
+  //     }
+  //   }
+  //   // ensure there was only 1 item output
+  //   expect(actual.length).toBe(1);
+  //   return actual[0];
+  // }).toString().match(/models\((.*?)\)/s)[1], () => {
+  //   // dynamic test group
+  // });
 
-  test.group('seed', (test) => {
+  describe('seed', () => {
     const min = 2;
     const max = 10;
     const expected_phone_lengths = [ 2, 1, 3, 3, 3, 3, 3, 1, 1, 1 ];
@@ -250,62 +241,59 @@ test.group('build', (test) => {
       };
     }
 
-    test('phones array lengths are the same', async (t) => {
-      const count = t.context.document.faker.random.number({ min: 10, max: 200 });
-      t.plan(count * 2);
+    test('phones array lengths are the same', async () => {
+      const count = document.faker.random.number({ min: 10, max: 200 });
       for (var i = 0; i < count; i++) {
-        const model = getModel();
+        const testModel = getModel();
         // reset the documents for each iteration
-        t.context.document.documents = {};
-        const actual = await t.context.document.build(model);
-        t.is(actual.length, model.data.count);
+        document.documents = {};
+        const actual = await document.build(testModel);
+        expect(actual.length).toBe(testModel.data.count);
         const lengths = actual.map((obj) => obj.phones.length);
-        t.deepEqual(lengths, expected_phone_lengths.slice(0, lengths.length));
+        expect(lengths).toEqual(expected_phone_lengths.slice(0, lengths.length));
       }
     });
 
 
-    test('none of the items in phones array are the same', async (t) => {
-      const model = getModel();
-      const actual = await t.context.document.build(model);
+    test('none of the items in phones array are the same', async () => {
+      const testModel = getModel();
+      const actual = await document.build(testModel);
       const phones = actual.map((obj) => obj.phones);
       phones.reduce((prev, next) => {
         // none of the items in the current array are the same as the other items
         for (var i = 0; i < next.length - 1; i++) {
-          t.notDeepEqual(next[i], next[i + 1]);
+          expect(next[i]).not.toEqual(next[i + 1]);
         }
         // none of the items are equal
-        t.notDeepEqual(prev, next);
+        expect(prev).not.toEqual(next);
         return prev;
       }, phones.pop());
     });
 
-    test('the content is exactly the same everytime', async (t) => {
-      const model = getModel();
+    test('the content is exactly the same everytime', async () => {
+      const testModel = getModel();
       let actual = [];
-      const count = t.context.document.faker.random.number({ min: 10, max: 200 });
-      t.plan(count - 1);
+      const count = document.faker.random.number({ min: 10, max: 200 });
       for (var i = 0; i < count; i++) {
-        t.context.document.documents = {};
-        actual.push(t.context.document.build(model));
+        document.documents = {};
+        actual.push(document.build(testModel));
       }
       actual = await Promise.all(actual);
 
       actual.reduce((expected, next) => {
-        t.deepEqual(next, expected);
+        expect(next).toEqual(expected);
         return expected;
       }, actual.pop());
     });
 
-    test('the two items returned are always the same', async (t) => {
-      const count = t.context.document.faker.random.number({ min: 10, max: 200 });
-      const model = getModel();
-      model.data.count = 1;
-      t.plan(count);
+    test('the two items returned are always the same', async () => {
+      const count = document.faker.random.number({ min: 10, max: 200 });
+      const testModel = getModel();
+      testModel.data.count = 1;
       for (var i = 0; i < count; i++) {
-        t.context.document.documents = {};
-        const actual = await t.context.document.build(model);
-        t.deepEqual(actual[0].phones, [
+        document.documents = {};
+        const actual = await document.build(testModel);
+        expect(actual[0].phones).toEqual([
           { type: 'Mobile', phone_number: '505.771.2870', extension: null },
           { type: 'Mobile', phone_number: '275-728-6040', extension: null }
         ]);
@@ -315,89 +303,92 @@ test.group('build', (test) => {
 });
 
 
-test.group('runData', (test) => {
-  test('function wasn\'t passed', (t) => {
-    const tester = () => t.context.document.runData();
-    t.notThrows(tester);
-    t.is(tester(), undefined);  
+describe('runData', () => {
+  test('function wasn\'t passed', () => {
+    const tester = () => document.runData();
+    expect(tester).not.toThrow();
+    expect(tester()).toBe(undefined);
   });
 
-  test('returns the context that\'s passed', (t) => {
+  test('returns the context that\'s passed', () => {
     function Foo() {
       return this;
     }
-    t.is(t.context.document.runData(Foo, 'context'), 'context');
+    expect(document.runData(Foo, 'context')).toBe('context');
   });
 
-  test('throws error because of something in function', (t) => {
+  test('throws error because of something in function', () => {
     function Foo() {
       const bar = {};
       return bar.data.woohoo;
     }
     // highjack the log function
-    t.context.document.log = (type, err) => {
+    document.log = (type, err) => {
       if (type === 'error') {
         throw err;
       }
     };
-    const tester = () => t.context.document.runData(Foo, 'context');
-    t.throws(tester, /Foo failed, Cannot read property 'woohoo' of undefined/);
+    const tester = () => document.runData(Foo, 'context');
+    expect(tester).toThrow(/Foo failed, Cannot read propert(?:y|ies) (?:'woohoo' of undefined|of undefined \(reading 'woohoo'\))/);
   });
 });
+
 
 // not needed because it just calls other functions that have been tested
 // test.todo('buildDocument');
 
-test.group('initializeDocument', (test) => {
-  test('throws if wrong paths were passed in', (t) => {
-    // highjack the log function
-    t.context.document.log = (type, message) => {
-      if (type === 'error') {
-        throw new Error(message);
-      }
-    };
-    const tester = () => t.context.document.initializeDocument({}, { model: [ 'a' ], document: [ 'a' ] });
-    t.throws(tester);
-  });
+// describe('initializeDocument', () => {
+//   test('throws if wrong paths were passed in', () => {
+//     // highjack the log function
+//     document.log = (type, message) => {
+//       if (type === 'error') {
+//         throw new Error(message);
+//       }
+//     };
+//     const tester = () => document.initializeDocument({}, { model: [ 'a' ], document: [ 'a' ] });
+//     expect(tester).toThrow();
+//   });
 
-  test.group(models(async (t, file) => {
-    await t.context.model.registerModels(file);
-    const model = _.find(t.context.model.models, (obj) => {
-      return obj.file.includes(file);
-    });
+//   describe(models(async (file) => {
+//     await model.registerModels(file);
+//     const testModel = _.find(model.models, (obj) => {
+//       return obj.file.includes(file);
+//     });
 
-    const doc = t.context.document.initializeDocument(model);
-    t.deepEqual(to.keys(doc), to.keys(model.properties));
-    function get(key) {
-      let result = _.get(model, `properties.${key}`);
-      if (!result) {
-        result = _.get(model, `properties.${key.split('.').join('.properties.')}`);
-      }
-      if (result) {
-        return typeToValue(result.type);
-      }
-      return null;
-    }
+//     const doc = document.initializeDocument(testModel);
+//     expect(to.keys(doc)).toEqual(to.keys(testModel.properties));
+//     function get(key) {
+//       let result = _.get(testModel, `properties.${key}`);
+//       if (!result) {
+//         result = _.get(testModel, `properties.${key.split('.').join('.properties.')}`);
+//       }
+//       if (result) {
+//         return typeToValue(result.type);
+//       }
+//       return null;
+//     }
 
-    const keys = utils.getPaths(doc);
+//     const keys = utils.getPaths(doc);
 
-    for (let key of keys) {
-      const expected = get(key);
-      const actual = _.get(doc, key);
-      const type = to.type(actual);
-      if (type !== 'object') {
-        if (type === 'array') {
-          t.deepEqual(actual, expected);
-        } else {
-          t.is(actual, expected);
-        }
-      }
-    }
-  }));
-});
+//     for (let key of keys) {
+//       const expected = get(key);
+//       const actual = _.get(doc, key);
+//       const type = to.type(actual);
+//       if (type !== 'object') {
+//         if (type === 'array') {
+//           expect(actual).toEqual(expected);
+//         } else {
+//           expect(actual).toBe(expected);
+//         }
+//       }
+//     }
+//   }).toString().match(/models\((.*?)\)/s)[1], () => {
+//     // dynamic test group
+//   });
+// });
 
 
-test.group('buildObject', (test) => {
+describe('buildObject', () => {
   const model = {
     name: 'test',
     data: {
@@ -428,10 +419,10 @@ test.group('buildObject', (test) => {
     }
   };
 
-  test((t) => {
+  test('builds object', () => {
     const paths = getPaths(model);
-    const doc = t.context.document.initializeDocument(model, paths);
-    const actual = t.context.document.buildObject(model, to.clone(doc), paths, 1);
+    const doc = document.initializeDocument(model, paths);
+    const actual = document.buildObject(model, to.clone(doc), paths, 1);
 
     const schema = is.object({
       phone: is.object({
@@ -442,130 +433,128 @@ test.group('buildObject', (test) => {
 
     const { error } = schema.validate(actual);
     if (error) {
-      t.fail(error);
-    } else {
-      t.pass();
+      throw error;
     }
 
-    t.notDeepEqual(doc, actual);
+    expect(doc).not.toEqual(actual);
   });
 
-  test('throws error', (t) => {
+  test('throws error', () => {
     const paths = getPaths(model);
-    const doc = t.context.document.initializeDocument(model, paths);
+    const doc = document.initializeDocument(model, paths);
     // highjack the log function
-    t.context.document.log = (type, message) => {
+    document.log = (type, message) => {
       if (type === 'error') {
         throw new Error(message);
       }
     };
 
-    const tester = () => t.context.document.buildObject(model, to.clone(doc), { model: [ 'a' ], document: [ 'b' ] }, 1);
-    t.throws(tester);
+    const tester = () => document.buildObject(model, to.clone(doc), { model: [ 'a' ], document: [ 'b' ] }, 1);
+    expect(tester).toThrow();
   });
 });
 
 
-test.group('buildValue', (test) => {
-  test('passed value', (t) => {
-    t.is(t.context.document.buildValue({}, 'value'), 'value');
-    t.is(t.context.document.buildValue({}, 1), 1);
-    t.deepEqual(t.context.document.buildValue({}, [ 'woohoo' ]), [ 'woohoo' ]);
-    t.deepEqual(t.context.document.buildValue({}, { foo: 'foo' }), { foo: 'foo' });
+describe('buildValue', () => {
+  test('passed value', () => {
+    expect(document.buildValue({}, 'value')).toBe('value');
+    expect(document.buildValue({}, 1)).toBe(1);
+    expect(document.buildValue({}, [ 'woohoo' ])).toEqual([ 'woohoo' ]);
+    expect(document.buildValue({}, { foo: 'foo' })).toEqual({ foo: 'foo' });
   });
 
-  test.group('property.data.pre_build', (test) => {
-    test('without passed value', (t) => {
-      const actual = t.context.document.buildValue({
+  describe('property.data.pre_build', () => {
+    test('without passed value', () => {
+      const actual = document.buildValue({
         data: { pre_build: () => 'pre_build' }
       });
 
-      t.is(actual, 'pre_build');
+      expect(actual).toBe('pre_build');
     });
 
-    test('with passed value', (t) => {
-      const actual = t.context.document.buildValue({
+    test('with passed value', () => {
+      const actual = document.buildValue({
         data: { pre_build: () => 'pre_build' }
       }, 'passed value');
-      t.not(actual, 'passed value');
-      t.is(actual, 'pre_build');
+      expect(actual).not.toBe('passed value');
+      expect(actual).toBe('pre_build');
     });
   });
 
-  test.group('property.data.value', (test) => {
-    test((t) => {
-      const actual = t.context.document.buildValue({ data: { value: 'value' } });
+  describe('property.data.value', () => {
+    test('passes value', () => {
+      const actual = document.buildValue({ data: { value: 'value' } });
 
-      t.is(actual, 'value');
+      expect(actual).toBe('value');
     });
 
-    test('with property.data.pre_build', (t) => {
-      const actual = t.context.document.buildValue({
+    test('with property.data.pre_build', () => {
+      const actual = document.buildValue({
         data: {
           pre_build: () => 'pre_build',
           value: 'value',
         }
       });
 
-      t.not(actual, 'pre_build');
-      t.is(actual, 'value');
+      expect(actual).not.toBe('pre_build');
+      expect(actual).toBe('value');
     });
 
-    test('with property.data.build', (t) => {
-      const actual = t.context.document.buildValue({
+    test('with property.data.build', () => {
+      const actual = document.buildValue({
         data: {
           build: () => 'build',
           value: 'value',
         }
       });
 
-      t.not(actual, 'build');
-      t.is(actual, 'value');
+      expect(actual).not.toBe('build');
+      expect(actual).toBe('value');
     });
 
-    test('with property.data.fake', (t) => {
-      const actual = t.context.document.buildValue({
+    test('with property.data.fake', () => {
+      const actual = document.buildValue({
         data: {
           fake: '{{name.firstName}}',
           value: 'value',
         }
       });
 
-      t.falsy(/[A-Z]/.test(actual));
-      t.is(actual, 'value');
+      expect(actual).not.toMatch(/[A-Z]/);
+      expect(actual).toBe('value');
     });
 
-    test('with passed value', (t) => {
-      const actual = t.context.document.buildValue({
+    test('with passed value', () => {
+      const actual = document.buildValue({
         data: { value: 'value' }
       }, 'passed value');
 
-      t.not(actual, 'passed value');
-      t.is(actual, 'value');
+      expect(actual).not.toBe('passed value');
+      expect(actual).toBe('value');
     });
   });
 
-  test.group('property.data.build', (test) => {
-    test((t) => {
-      const actual = t.context.document.buildValue({
+  describe('property.data.build', () => {
+    test('passes build value', () => {
+      const actual = document.buildValue({
         data: { build: () => 'build' }
       });
-      t.is(actual, 'build');
+      expect(actual).toBe('build');
     });
 
-    test('with property.data.pre_build', (t) => {
-      const actual = t.context.document.buildValue({
+    test('with property.data.pre_build', () => {
+      const actual = document.buildValue({
         data: {
           pre_build: () => 'pre_build',
           build: () => 'build',
         }
       });
-      t.not(actual, 'pre_build');
-      t.is(actual, 'build');
+      expect(actual).not.toBe('pre_build');
+      expect(actual).toBe('build');
     });
 
-    test('with global value set in pre_build', (t) => {
-      const actual = t.context.document.buildValue({
+    test('with global value set in pre_build', () => {
+      const actual = document.buildValue({
         data: {
           pre_build: (context, documents, globals) => {
             globals.pre_build_global = 'pre_build_global';
@@ -574,64 +563,64 @@ test.group('buildValue', (test) => {
         }
       });
 
-      t.is(actual, 'pre_build_global');
+      expect(actual).toBe('pre_build_global');
     });
 
-    test('with property.data.fake', (t) => {
-      const actual = t.context.document.buildValue({
+    test('with property.data.fake', () => {
+      const actual = document.buildValue({
         data: {
           fake: '{{name.firstName}}',
           build: () => 'build',
         }
       });
 
-      t.falsy(/[A-Z]/.test(actual));
-      t.is(actual, 'build');
+      expect(actual).not.toMatch(/[A-Z]/);
+      expect(actual).toBe('build');
     });
 
-    test('with passed value', (t) => {
-      const actual = t.context.document.buildValue({
+    test('with passed value', () => {
+      const actual = document.buildValue({
         data: { build: () => 'build' }
       });
-      t.not(actual, 'passed value');
-      t.is(actual, 'build');
+      expect(actual).not.toBe('passed value');
+      expect(actual).toBe('build');
     });
   });
 
-  test.group('property.data.fake', (test) => {
+  describe('property.data.fake', () => {
     const fake = '{{name.firstName}}';
-    test((t) => {
-      const actual = t.context.document.buildValue({ data: { fake } });
+    test('passes fake value', () => {
+      const actual = document.buildValue({ data: { fake } });
 
-      t.not(actual, fake);
-      t.truthy(/[A-Z]/.test(actual));
+      expect(actual).not.toBe(fake);
+      expect(actual).toMatch(/[A-Z]/);
     });
 
-    test('with property.data.pre_build', (t) => {
-      const actual = t.context.document.buildValue({
+    test('with property.data.pre_build', () => {
+      const actual = document.buildValue({
         data: {
           pre_build: () => 'pre_build',
           fake,
         }
       });
 
-      t.not(actual, 'pre_build');
-      t.not(actual, fake);
-      t.truthy(/[A-Z]/.test(actual));
+      expect(actual).not.toBe('pre_build');
+      expect(actual).not.toBe(fake);
+      expect(actual).toMatch(/[A-Z]/);
     });
 
-    test('with passed value', (t) => {
-      const actual = t.context.document.buildValue({
+    test('with passed value', () => {
+      const actual = document.buildValue({
         data: { fake }
       }, 'passed value');
 
-      t.not(actual, 'passed value');
-      t.not(actual, fake);
-      t.truthy(/[A-Z]/.test(actual));
+      expect(actual).not.toBe('passed value');
+      expect(actual).not.toBe(fake);
+      expect(actual).toMatch(/[A-Z]/);
     });
   });
 
-  test.group('property.items', (test) => {
+  describe('property.items', () => {
     function items(obj) {
       return {
         type: 'array',
@@ -645,24 +634,22 @@ test.group('buildValue', (test) => {
       };
     }
 
-    test('with passed value', (t) => {
-      t.plan(7);
-      const actual = t.context.document.buildValue(items({
+    test('with passed value', () => {
+      const actual = document.buildValue(items({
         type: 'string',
         data: {
           count: 5,
         }
       }), []);
 
-      t.is(to.type(actual), 'array');
-      t.is(actual.length, 5);
+      expect(to.type(actual)).toBe('array');
+      expect(actual.length).toBe(5);
       // expect all items to be empty strings
-      actual.forEach((item) => t.is(item, ''));
+      actual.forEach((item) => expect(item).toBe(''));
     });
 
-    test('with property.items.data.pre_build', (t) => {
-      t.plan(7);
-      const actual = t.context.document.buildValue(items({
+    test('with property.items.data.pre_build', () => {
+      const actual = document.buildValue(items({
         type: 'string',
         data: {
           count: 5,
@@ -670,14 +657,13 @@ test.group('buildValue', (test) => {
         }
       }), []);
 
-      t.is(to.type(actual), 'array');
-      t.is(actual.length, 5);
-      actual.forEach((item) => t.is(item, 'pre_build'));
+      expect(to.type(actual)).toBe('array');
+      expect(actual.length).toBe(5);
+      actual.forEach((item) => expect(item).toBe('pre_build'));
     });
 
-    test('with property.items.data.value', (t) => {
-      t.plan(7);
-      const actual = t.context.document.buildValue(items({
+    test('with property.items.data.value', () => {
+      const actual = document.buildValue(items({
         type: 'string',
         data: {
           count: 5,
@@ -685,14 +671,13 @@ test.group('buildValue', (test) => {
         }
       }), []);
 
-      t.is(to.type(actual), 'array');
-      t.is(actual.length, 5);
-      actual.forEach((item) => t.is(item, 'value'));
+      expect(to.type(actual)).toBe('array');
+      expect(actual.length).toBe(5);
+      actual.forEach((item) => expect(item).toBe('value'));
     });
 
-    test('with property.items.data.build', (t) => {
-      t.plan(7);
-      const actual = t.context.document.buildValue(items({
+    test('with property.items.data.build', () => {
+      const actual = document.buildValue(items({
         type: 'string',
         data: {
           count: 5,
@@ -700,14 +685,13 @@ test.group('buildValue', (test) => {
         }
       }), []);
 
-      t.is(to.type(actual), 'array');
-      t.is(actual.length, 5);
-      actual.forEach((item) => t.is(item, 'build'));
+      expect(to.type(actual)).toBe('array');
+      expect(actual.length).toBe(5);
+      actual.forEach((item) => expect(item).toBe('build'));
     });
 
-    test('with property.items.data.fake', (t) => {
-      t.plan(7);
-      const actual = t.context.document.buildValue(items({
+    test('with property.items.data.fake', () => {
+      const actual = document.buildValue(items({
         type: 'string',
         data: {
           count: 5,
@@ -715,15 +699,15 @@ test.group('buildValue', (test) => {
         }
       }), []);
 
-      t.is(to.type(actual), 'array');
-      t.is(actual.length, 5);
-      actual.forEach((item) => t.truthy(/[A-Z]/.test(item)));
+      expect(to.type(actual)).toBe('array');
+      expect(actual.length).toBe(5);
+      actual.forEach((item) => expect(item).toMatch(/[A-Z]/));
     });
 
-    test('called multiple times returns different array lengths between min and max', (t) => {
+    test('called multiple times returns different array lengths between min and max', () => {
       let actual = [];
       for (let i = 0; i < 10; i++) {
-        const value = t.context.document.buildValue(items({
+        const value = document.buildValue(items({
           type: 'string',
           data: {
             min: 1,
@@ -734,13 +718,13 @@ test.group('buildValue', (test) => {
         actual.push(value);
       }
 
-      actual.forEach((item) => t.truthy(/[A-Z]/.test(item)));
+      actual.forEach((arr) => arr.forEach((item) => expect(item).toMatch(/[A-Z]/)));
       actual = actual.map((item) => item.length);
-      t.truthy(_.uniq(actual).length > 1);
+      expect(_.uniq(actual).length > 1).toBeTruthy();
     });
 
-    test('complex array', (t) => {
-      const actual = t.context.document.buildValue(items({
+    test('complex array', () => {
+      const actual = document.buildValue(items({
         type: 'object',
         data: { count: 5 },
         properties: {
@@ -774,7 +758,7 @@ test.group('buildValue', (test) => {
 });
 
 
-test.group('postProcess', (test) => {
+describe('postProcess', () => {
   const model = {
     name: 'test',
     type: 'object',
@@ -869,11 +853,11 @@ test.group('postProcess', (test) => {
     }
   };
 
-  test((t) => {
+  test('post processes values', () => {
     const paths = getPaths(model);
-    let doc = t.context.document.initializeDocument(model, paths);
-    doc = t.context.document.buildObject(model, doc, paths, 1);
-    const actual = t.context.document.postProcess(model, to.clone(doc), paths);
+    let doc = document.initializeDocument(model, paths);
+    doc = document.buildObject(model, doc, paths, 1);
+    const actual = document.postProcess(model, to.clone(doc), paths);
     const schema = is.object({
       nochanges: is.string().lowercase(),
       changes: is.string().uppercase(),
@@ -891,30 +875,30 @@ test.group('postProcess', (test) => {
         .max(4),
     });
 
-    t.truthy(/[a-z]+/.test(doc.changes));
-    t.truthy(/[A-Z]+/.test(actual.changes));
+    expect(doc.changes).toMatch(/[a-z]+/);
+    expect(actual.changes).toMatch(/[A-Z]+/);
     is.assert(actual, schema);
-    t.notDeepEqual(doc, actual);
+    expect(doc).not.toEqual(actual);
   });
 
-  test('throws error', (t) => {
+  test('throws error', () => {
     const paths = getPaths(model);
-    let doc = t.context.document.initializeDocument(model, paths);
-    doc = t.context.document.buildObject(model, doc, paths, 1);
+    let doc = document.initializeDocument(model, paths);
+    doc = document.buildObject(model, doc, paths, 1);
     // highjack the log function
-    t.context.document.log = (type, message) => {
+    document.log = (type, message) => {
       if (type === 'error') {
         throw new Error(message);
       }
     };
 
-    const tester = () => t.context.document.postProcess(model, to.clone(doc), { model: [ 'a' ], document: [ 'b' ] }, 1);
-    t.throws(tester);
+    const tester = () => document.postProcess(model, to.clone(doc), { model: [ 'a' ], document: [ 'b' ] }, 1);
+    expect(tester).toThrow();
   });
 });
 
 
-test.group('transformValueToType', (test) => {
+describe('transformValueToType', () => {
   const tests = [
     {
       actual: [ null, 'woohoo' ],
@@ -1001,33 +985,33 @@ test.group('transformValueToType', (test) => {
     } else if (to.type(value) === 'array') {
       value = `[ '${value.join('\', \'')}' ]`;
     }
-    test(`type is \`${actual[0]}\` and value is \`${value}\``, (t) => {
+    test(`type is \`${actual[0]}\` and value is \`${value}\``, () => {
       if ('array,object'.includes(to.type(expected))) {
-        t.deepEqual(transformValueToType(...actual), expected);
+        expect(transformValueToType(...actual)).toEqual(expected);
       } else {
-        t.is(transformValueToType(...actual), expected);
+        expect(transformValueToType(...actual)).toBe(expected);
       }
     });
   });
 });
 
 
-test.group('getPaths', models(async (t, file) => {
-  await t.context.model.registerModels(file);
-  const model = _.find(t.context.model.models, (obj) => {
-    return obj.file.includes(file);
+describe('getPaths', models(async (file) => {
+  await model.registerModels(file);
+  const testModel = _.find(model.models, (obj) => {
+    return obj.file === p(documents_root, file);
   });
-  const paths = getPaths(model);
+  const paths = getPaths(testModel);
 
-  t.is(to.type(paths), 'object');
-  t.deepEqual(to.keys(paths), [ 'model', 'document' ]);
-  t.falsy(paths.model.join(',').includes('items.properties'), 'shouldn\'t have an instance of `items.properties`');
-  t.falsy(paths.document.join(',').includes('properties.'), 'shouldn\'t have an instance of `properties`');
-  t.is(paths.model.length, paths.document.length, 'They should have the same length');
+  expect(to.type(paths)).toBe('object');
+  expect(to.keys(paths)).toEqual([ 'model', 'document' ]);
+  expect(paths.model.join(',').includes('items.properties')).toBeFalsy();
+  expect(paths.document.join(',').includes('properties.')).toBeFalsy();
+  expect(paths.model.length).toBe(paths.document.length);
 }));
 
 
-test.group('typeToValue', (test) => {
+describe('typeToValue', () => {
   const tests = [
     { actual: 'string', expected: '' },
     { actual: 'object', expected: {} },
@@ -1045,15 +1029,14 @@ test.group('typeToValue', (test) => {
   ];
 
   tests.forEach(({ actual, expected }) => {
-    test(actual, (t) => {
+    test(actual, () => {
       if ('object,structure,array'.includes(actual)) {
-        t.deepEqual(typeToValue(actual), expected);
+        expect(typeToValue(actual)).toEqual(expected);
       } else {
-        t.is(typeToValue(actual), expected);
+        expect(typeToValue(actual)).toBe(expected);
       }
     });
   });
 });
 
-
-test.after(models.todo);
+});

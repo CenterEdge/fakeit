@@ -1,13 +1,11 @@
  
 
-import Zip from '../../dist/output/zip';
+import Zip from '../../app/output/zip';
 import { join as p } from 'path';
 import fs from 'fs-extra-promisify';
-import default_options from '../../dist/output/default-options';
-import ava from 'ava-spec';
+import default_options from '../../app/output/default-options';
 import to from 'to-js';
-
-const test = ava.group('output:zip');
+import { describe, expect, test, beforeEach, afterAll } from '@jest/globals';
 
 fs.exists = async (str) => {
   try {
@@ -21,41 +19,43 @@ fs.exists = async (str) => {
 const zip_root = p(__dirname, '..', 'fixtures', 'output', 'zip');
 default_options.root = zip_root;
 
-test.beforeEach((t) => {
-  t.context = new Zip({ root: zip_root });
-});
+describe('output:zip', () => {
+  let context;
 
-test('without args', (t) => {
-  t.deepEqual(t.context.output_options, default_options);
-  t.is(t.context.prepared, false);
-  t.is(typeof t.context.prepare, 'function');
-  t.is(typeof t.context.output, 'function');
-});
+  beforeEach(() => {
+    context = new Zip({ root: zip_root });
+  });
 
-test('prepare', async (t) => {
-  t.is(t.context.prepared, false);
-  t.is(t.context.preparing, undefined);  
-  const preparing = t.context.prepare();
-  t.is(typeof t.context.preparing.then, 'function');
-  t.is(t.context.prepared, false);
-  await preparing;
-  t.is(typeof t.context.zip, 'object');
-  t.is(t.context.prepared, true);
-});
+  test('without args', () => {
+    expect(context.output_options).toEqual(default_options);
+    expect(context.prepared).toBe(false);
+    expect(typeof context.prepare).toBe('function');
+    expect(typeof context.output).toBe('function');
+  });
 
-test('setup', async (t) => {
-  t.is(t.context.prepared, false);
-  t.is(t.context.preparing, undefined);  
-  const preparing = t.context.setup();
-  t.is(typeof t.context.preparing.then, 'function');
-  t.is(t.context.prepared, false);
-  await preparing;
-  t.is(typeof t.context.zip, 'object');
-  t.is(t.context.prepared, true);
-});
+  test('prepare', async () => {
+    expect(context.prepared).toBe(false);
+    expect(context.preparing).toBeUndefined();  
+    const preparing = context.prepare();
+    expect(typeof context.preparing.then).toBe('function');
+    expect(context.prepared).toBe(false);
+    await preparing;
+    expect(typeof context.zip).toBe('object');
+    expect(context.prepared).toBe(true);
+  });
 
-// These tests must be run in order since they're testing the console output.
-test.group((test) => {
+  test('setup', async () => {
+    expect(context.prepared).toBe(false);
+    expect(context.preparing).toBeUndefined();  
+    const preparing = context.setup();
+    expect(typeof context.preparing.then).toBe('function');
+    expect(context.prepared).toBe(false);
+    await preparing;
+    expect(typeof context.zip).toBe('object');
+    expect(context.prepared).toBe(true);
+  });
+
+  // These tests must be run in order since they're testing the console output.
   const languages = {
     cson: to.normalize(`
       [
@@ -125,38 +125,38 @@ test.group((test) => {
     `)
   };
 
-  test.group('output', (test) => {
+  describe('output', () => {
     for (let language of to.keys(languages)) {
       const data = languages[language];
-      test(`${language}`, async (t) => {
-        t.is(t.context.prepared, false);
-        t.context.output_options.output = 'folder';
-        t.context.output_options.format = language;
-        t.is(t.context.preparing, undefined);  
-        await t.context.output('woohoo', data);
-        t.is(t.context.zip.getEntries()[0].name, `woohoo.${language}`);
-        t.is(t.context.prepared, true);
+      test(`${language}`, async () => {
+        expect(context.prepared).toBe(false);
+        context.output_options.output = 'folder';
+        context.output_options.format = language;
+        expect(context.preparing).toBeUndefined();  
+        await context.output('woohoo', data);
+        expect(context.zip.getEntries()[0].name).toBe(`woohoo.${language}`);
+        expect(context.prepared).toBe(true);
       });
     }
   });
 
-  test.group('finalize', (test) => {
+  describe('finalize', () => {
     for (let language of to.keys(languages)) {
       const data = languages[language];
-      test(`${language}`, async (t) => {
-        t.is(t.context.prepared, false);
-        t.context.output_options.output = zip_root;
-        t.context.output_options.archive = `${language}.zip`;
-        t.context.output_options.format = language;
-        t.is(t.context.preparing, undefined);  
-        await t.context.output('woohoo', data);
-        t.is(t.context.zip.getEntries()[0].name, `woohoo.${language}`);
-        t.is(t.context.prepared, true);
-        await t.context.finalize();
-        t.is(await fs.exists(p(zip_root, t.context.output_options.archive)), true);
+      test(`${language}`, async () => {
+        expect(context.prepared).toBe(false);
+        context.output_options.output = zip_root;
+        context.output_options.archive = `${language}.zip`;
+        context.output_options.format = language;
+        expect(context.preparing).toBeUndefined();  
+        await context.output('woohoo', data);
+        expect(context.zip.getEntries()[0].name).toBe(`woohoo.${language}`);
+        expect(context.prepared).toBe(true);
+        await context.finalize();
+        expect(await fs.exists(p(zip_root, context.output_options.archive))).toBe(true);
       });
     }
   });
+
+  afterAll(() => fs.remove(zip_root));
 });
-
-test.after.always(() => fs.remove(zip_root));

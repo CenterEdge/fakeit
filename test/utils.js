@@ -1,3 +1,5 @@
+import { test } from '@jest/globals';
+
 var joi = require('joi');
 var to = require('to-js');
 to = to.default;
@@ -96,7 +98,7 @@ module.exports.models = function(settings) {
 
     options.todo = to.array(options.todo);
 
-    return function(test) {
+    return function() {
       if (!options.run) return;
       // loop over all the globs
       settings.modules.forEach(function(model) {
@@ -124,13 +126,8 @@ module.exports.models = function(settings) {
            
           const schema_keys = schema.isJoi ? _.map(schema._inner.children, 'key') : to.keys(schema);
 
-          if (model.indexOf('flight-data') >= 0) {
-            test = test.serial;
-          }
-
-          test(model, function(t) {  
-            // run the call back with the `t` assertion object and the current model
-            var result = cb(t, model);
+          test(model, function() {  
+            var result = cb(model);
 
             if (!result) {
               return;
@@ -158,8 +155,7 @@ module.exports.models = function(settings) {
                 // if there're any keys that still need validation add them
                 // to the schema_keys to test at the end
                 if (omitted.length) {
-                  var key = t.title.replace('fakit generate', '').trim();
-                  models.schemas_todo[key] = omitted;
+                  models.schemas_todo[model] = omitted;
                 }
 
                 // validate the object that can be validated
@@ -178,9 +174,7 @@ module.exports.models = function(settings) {
                         console.log('   path:', item_path);
                       }
                     }
-                    t.fail(`${model} isn't valid ${err.message}`);
-                  } else {
-                    t.pass(`${model} is valid`);
+                    throw new Error(`${model} isn't valid ${err.message}`);
                   }
                 };
                 if (schema.isJoi) {
@@ -188,18 +182,8 @@ module.exports.models = function(settings) {
                 } else {
                   joi.validate(picked, schema, validate);
                 }
-              })
-              .catch(function(err) {
-                t.fail(err);
               });
           });
-        } else if (
-          options.match === null &&
-          options.todo.indexOf(model) > -1
-        ) {
-          // if there's no specific match to test at they're
-          // on the todo list then add that model to todo tests
-          test.todo(model);
         }
       });
     };

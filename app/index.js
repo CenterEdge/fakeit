@@ -56,7 +56,8 @@ export default class Fakeit extends Base {
     await model.registerModels(models);
     // calculate the total # of dependencies, if it is 0 and we're using Couchbase,
     // we can leverage streams to output the data.
-    let total_dependants = model.models.forEach((value) => {
+    let total_dependants = 0;
+    model.models.forEach((value) => {
       total_dependants += value.dependants.length;
     });
     await output.preparing;

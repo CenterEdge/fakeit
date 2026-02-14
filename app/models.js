@@ -44,7 +44,7 @@ export default class Models extends Base {
   prepare() {
     this.preparing = true;
     this.preparing = this.setup();
-    return this.preparing;
+    return this.preparing.then(() => this.prepared = true);
   }
 
   ///# @name setup
@@ -60,9 +60,6 @@ export default class Models extends Base {
     let { babel_config } = this.options;
 
     if (!is.string(babel_config)) {
-      process.nextTick(() => {
-        this.prepared = true;
-      });
       return;
     }
 
@@ -86,8 +83,6 @@ export default class Models extends Base {
 
       this.options.babel_config = config;
     }
-
-    this.prepared = true;
   }
 
   ///# @name update
