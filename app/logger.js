@@ -1,4 +1,4 @@
-import to from 'to-js';
+import to from './to.js';
 import chalk from 'chalk';
 import symbols from 'log-symbols';
 import perfy from 'perfy';

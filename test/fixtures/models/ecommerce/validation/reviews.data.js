@@ -1,7 +1,7 @@
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/^review_[a-z0-9-]+$/),
+  _id: is.string().pattern(/^review_[a-z0-9-]+$/),
   doc_type: 'review',
   review_id: is.string().uuid(),
   product_id: is.string().uuid(),

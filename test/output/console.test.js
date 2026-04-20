@@ -2,7 +2,7 @@
 
 import Console from '../../app/output/console';
 import default_options from '../../app/output/default-options';
-import to from 'to-js';
+import to from '../../app/to.js';
 import { stripColor } from 'chalk';
 import { describe, expect, test, beforeEach } from '@jest/globals';
 

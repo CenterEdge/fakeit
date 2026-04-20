@@ -1,7 +1,7 @@
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/^playlist_[a-z0-9-]+$/),
+  _id: is.string().pattern(/^playlist_[a-z0-9-]+$/),
   type: 'playlist',
   id: is.string().uuid(),
   created: is.date().iso(),
@@ -20,7 +20,7 @@ module.exports = is.object({
     username: is.string(),
   },
   tracks: is.array()
-    .items(is.string().regex(/^[A-Z0-9]+$/))
+    .items(is.string().pattern(/^[A-Z0-9]+$/))
     .min(1)
     .max(6) // is normally 25 but since there can only be 6 other tracks in testing there should only ever be a max of 6
 });

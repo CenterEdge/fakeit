@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeAll, beforeEach, afterAll } from '@jest/globals';
 import default_options from '../app/output/default-options';
-import to from 'to-js';
+import to from '../app/to.js';
 import globby from 'globby';
 import fs from 'fs-extra-promisify';
 import path, { join as p } from 'path';

@@ -2,7 +2,7 @@ var utils = require('../../../../utils.js');
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/^contact_[a-z0-9-]{10,}$/),
+  _id: is.string().pattern(/^contact_[a-z0-9-]{10,}$/),
   doc_type: 'contact',
   contact_id: is.string().guid(),
   created_on: is.date(),
@@ -25,7 +25,7 @@ module.exports = is.object({
     })
     .min(1)
     .max(3)
-    .sparse(false),
+    ,
   emails: is.array()
     .items(is.string().email())
     .min(1)
@@ -42,7 +42,7 @@ module.exports = is.object({
     })
     .min(1)
     .max(2)
-    .sparse(false),
+    ,
   children: is.array()
     .items({
       first_name: is.string(),
@@ -51,11 +51,11 @@ module.exports = is.object({
     })
     .min(1)
     .max(8)
-    .sparse(false),
+    ,
   notes: is.string(),
   tags: is.array()
     .items(is.string())
     .min(1)
     .max(6)
-    .sparse(false),
+    ,
 });

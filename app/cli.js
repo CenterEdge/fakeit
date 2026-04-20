@@ -1,14 +1,11 @@
 import commander from 'commander';
 import Fakeit from './index.js';
-import updateNotifier from 'update-notifier';
 import pkg from './../package.json';
 import path from 'path';
 import { extend, flattenDeep, pick, find } from 'lodash';
 import chalk from 'chalk';
 // this is not a function that is to be called by anything other than the `bin/fakeit` file in the project
 export default async function() {
-  // check for update and notify
-  updateNotifier({ pkg }).notify();
   const base_options = [
     'root',
     'babel',

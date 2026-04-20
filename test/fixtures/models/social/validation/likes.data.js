@@ -1,7 +1,7 @@
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/^like_[a-z0-9-]+$/),
+  _id: is.string().pattern(/^like_[a-z0-9-]+$/),
   doc_type: 'like',
   like_id: is.string().uuid(),
   post_id: is.string().uuid(),

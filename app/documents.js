@@ -9,7 +9,7 @@ import Chance from 'chance';
 import Base from './base';
 import { objectSearch, pool } from './utils';
 import { set, get } from 'lodash';
-import to from 'to-js';
+import to from './to.js';
 
 ////
 /// @name Documents

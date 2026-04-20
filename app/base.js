@@ -1,5 +1,5 @@
 import path from 'path';
-import to from 'to-js';
+import to from './to.js';
 import Logger from './logger';
 
 /// @name Base

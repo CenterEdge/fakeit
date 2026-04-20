@@ -8,7 +8,7 @@ import {
 /* istanbul ignore next : needed to test models */
 const Model = require('../app/models.js').default;
 import { join as p } from 'path';
-import to from 'to-js';
+import to from '../app/to.js';
 import is from 'joi';
 import _ from 'lodash';
 import fs from 'fs-extra-promisify';
@@ -31,7 +31,7 @@ describe('documents', () => {
   let model, documents, globals, inputs, document;
 
   beforeAll(async () => {
-    babel_config = await fs.readJson(p(__dirname, '..', '.babelrc.test'));
+    babel_config = await fs.readJson(p(__dirname, '..', 'babel.config.json'));
   });
 
   beforeEach(async () => {
@@ -96,7 +96,7 @@ describe('build', () => {
     const actual = await document.build(model);
     const schema = is.array()
       .items(is.object({
-        test: is.string().regex(/woohoo/),
+        test: is.string().pattern(/woohoo/),
       }))
       .length(1);
     is.assert(actual, schema);
@@ -427,7 +427,7 @@ describe('buildObject', () => {
     const schema = is.object({
       phone: is.object({
         type: is.string(),
-        phone_number: is.string().regex(/\(333\) 333 - 3333/),
+        phone_number: is.string().pattern(/\(333\) 333 - 3333/),
       })
     });
 
@@ -748,8 +748,8 @@ describe('buildValue', () => {
 
       is.assert(actual, is.array()
         .items(is.object({
-          first_name: is.string().regex(/[A-Z][a-zA-Z\s]+/),
-          gender: [ is.string().regex(/M|F/), is.allow(null) ],
+          first_name: is.string().pattern(/[A-Z][a-zA-Z\s]+/),
+          gender: [ is.string().pattern(/M|F/), is.allow(null) ],
           age: is.number().min(1).max(17),
         }))
         .length(5));
@@ -862,14 +862,14 @@ describe('postProcess', () => {
       nochanges: is.string().lowercase(),
       changes: is.string().uppercase(),
       emails: is.array()
-        .items(is.string().regex(/[A-Z]+@example\.com/))
+        .items(is.string().pattern(/[A-Z]+@example\.com/))
         .min(1)
         .max(4),
       phones: is.array()
         .items(is.object({
           type: is.string(),
-          extension: is.string().regex(/10/),
-          phone_number: is.string().regex(/\(333\) 333 - 3333/),
+          extension: is.string().pattern(/10/),
+          phone_number: is.string().pattern(/\(333\) 333 - 3333/),
         }))
         .min(1)
         .max(4),

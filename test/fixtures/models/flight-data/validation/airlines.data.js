@@ -1,7 +1,7 @@
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/^airline_[0-9]+$/),
+  _id: is.string().pattern(/^airline_[0-9]+$/),
   doc_type: 'airline',
   airline_id: is.number(),
   airline_name: is.string(),

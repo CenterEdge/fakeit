@@ -2,7 +2,7 @@ var utils = require('../../../../utils.js');
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/^order_[0-9]+$/),
+  _id: is.string().pattern(/^order_[0-9]+$/),
   doc_type: 'order',
   order_id: 1,
   user_id: is.number(),
@@ -39,6 +39,6 @@ module.exports = is.object({
     })
     .min(1)
     .max(5)
-    .sparse(false),
+    ,
   grand_total: is.number().precision(2),
 });

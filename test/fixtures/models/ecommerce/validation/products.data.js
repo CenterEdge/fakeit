@@ -2,7 +2,7 @@ var utils = require('../../../../utils.js');
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/^product_[a-z0-9-]+$/),
+  _id: is.string().pattern(/^product_[a-z0-9-]+$/),
   doc_type: 'product',
   product_id: is.string().uuid(),
   price: is.number().precision(2),
@@ -12,7 +12,7 @@ module.exports = is.object({
   long_description: is.string().min(50 * 5),
   keywords: is.array()
     .items(is.string())
-    .sparse(false)
+    
     .min(0)
     .max(10),
   availability: [ 'Preorder', 'In-Stock', 'Out of Stock', 'Discontinued' ],
@@ -23,7 +23,7 @@ module.exports = is.object({
   image: is.string().uri(),
   alternate_images: is.array()
     .items(is.string().uri())
-    .sparse(false)
+    
     .min(0)
     .max(4),
   created_on: is.date(),

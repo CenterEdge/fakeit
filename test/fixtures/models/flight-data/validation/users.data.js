@@ -32,7 +32,7 @@ module.exports = is.object({
     })
     .min(1)
     .max(3)
-    .sparse(false),
+    ,
   emails: is.array()
     .items({
       type: [ 'Home', 'Work', 'Other' ],
@@ -41,19 +41,19 @@ module.exports = is.object({
     })
       .min(1)
       .max(3)
-      .sparse(false),
+      ,
   addresses: is.array()
     .items({
       type: [ 'Home', 'Work', 'Other' ],
       address_1: is.string(),
       address_2: [ is.string(), null ],
       locality: is.string(),
-      iso_region: is.string().regex(/^[A-Z]{2}.*/),
+      iso_region: is.string().pattern(/^[A-Z]{2}.*/),
       postal_code: utils.postal_code,
       iso_country: is.string().uppercase().length(2),
       primary: is.boolean(),
     })
     .min(1)
     .max(2)
-    .sparse(false),
+    ,
 });

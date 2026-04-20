@@ -5,8 +5,8 @@ import DependencyResolver from 'dependency-resolver';
 import * as utils from './utils';
 import Base from './base';
 import { set, get, find } from 'lodash';
-import to, { is } from 'to-js';
-import { transform } from 'babel-core';
+import to, { is } from './to.js';
+import { transformSync } from '@babel/core';
 import globby from 'globby';
 import findRoot from 'find-root';
 
@@ -315,7 +315,7 @@ export function parseModelFunctions(model, babel_config = {}) {
     ) {
       try {
         // transform the function and remove the `'use strict';\n` part that babel adds if it exists
-        fn = transform(fn, babel_config).code.replace(/^.use strict.;\n+/, '');
+        fn = transformSync(fn, { configFile: false, babelrc: false, ...babel_config }).code.replace(/^.use strict.;\n+/, '');
       } catch (e) {
         const file_message = model.file ? ` in ${model.file}` : '';
         e.message = `Failed to transpile ${function_path} with babel${file_message}\n${e.message}`.trim();

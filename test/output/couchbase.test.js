@@ -42,7 +42,7 @@ jest.mock('couchbase', () => {
 
 import Couchbase from '../../app/output/couchbase';
 import default_options from '../../app/output/default-options';
-import to from 'to-js';
+import to from '../../app/to.js';
 
 describe('output:couchbase', () => {
   let context;

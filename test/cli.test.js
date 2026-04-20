@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeAll, afterAll, jest } from '@jest/globals';
 import { join as p } from 'path';
-import to from 'to-js';
+import to from '../app/to.js';
 import fs from 'fs-extra-promisify';
 import { execSync } from 'child_process';
 import chalk, { stripColor } from 'chalk';

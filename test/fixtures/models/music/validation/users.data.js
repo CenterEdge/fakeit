@@ -2,7 +2,7 @@ var utils = require('../../../../utils.js');
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/user_.+/),
+  _id: is.string().pattern(/user_.+/),
   type: 'userprofile',
   username: is.string(),
   title: is.string(),
@@ -14,7 +14,7 @@ module.exports = is.object({
   address: {
     state: is.string(),
     city: is.string(),
-    country_code: is.string().regex(/^[A-Z]{2}$/),
+    country_code: is.string().pattern(/^[A-Z]{2}$/),
     street: is.string(),
     postal_code: utils.postal_code,
   },

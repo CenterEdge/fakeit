@@ -1,7 +1,7 @@
 import Models from './models';
 import Output from './output/index';
 import Base from './base';
-import to from 'to-js';
+import to from './to.js';
 import { uniqueId } from 'lodash';
 import Documents from './documents';
 import DocumentsStream from './documents-stream';

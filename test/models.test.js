@@ -12,7 +12,7 @@ import Models, {
 } from '../app/models.js';
 import path, { join as p } from 'path';
 import { describe, expect, test, beforeAll, beforeEach, afterAll } from '@jest/globals';
-import to from 'to-js';
+import to from '../app/to.js';
 import is from 'joi';
 import _ from 'lodash';
 import fs from 'fs-extra-promisify';
@@ -36,7 +36,7 @@ let babel_config, contents, modelsInstance;
 
 describe('models', () => {
   beforeAll(async () => {
-    babel_config = await fs.readJson(p(__dirname, '..', '.babelrc.test'));
+    babel_config = await fs.readJson(p(__dirname, '..', 'babel.config.json'));
     // get the contents of the models store them on an object so it can be reused
     contents = await models.getContents();
   });
@@ -45,7 +45,7 @@ describe('models', () => {
     modelsInstance = new Models({
       root: models_root,
       log: false,
-      babel_config: '+(.babelrc.test|package.json)',
+      babel_config: 'babel.config.json',
     });
   });
 
@@ -66,7 +66,7 @@ describe('models', () => {
         timestamp: true,
         count: 0,
         seed: 0,
-        babel_config: '+(.babelrc.test|package.json)'
+        babel_config: 'babel.config.json'
       },
       log_types: is.object().required(),
       inputs: is.object().length(0),
@@ -75,7 +75,7 @@ describe('models', () => {
       registered_models: is.array().length(0),
       spinners: is.object().required(),
     };
-    const { error } = is.validate(modelsInstance, expected);
+    const { error } = is.object(expected).validate(modelsInstance);
     if (error) {
       throw error;
     }
@@ -321,17 +321,17 @@ describe('models', () => {
         {
           name: 'single line has a return',
           actual: '`contact_${this.contact_id}`',
-          expected: "function build(_documents, _globals, _inputs, _faker, _chance, _document_index, _require) {\n  function __result(documents, globals, inputs, faker, chance, document_index, require) {\n    return \"contact_\" + this.contact_id;\n  }\n  return __result.apply(this, [].slice.call(arguments));\n}",
+          expected: "function build(_documents, _globals, _inputs, _faker, _chance, _document_index, _require) {\n  function __result(documents, globals, inputs, faker, chance, document_index, require) {\n    return `contact_${this.contact_id}`;\n  }\n  return __result.apply(this, [].slice.call(arguments));\n}",
         },
         {
           name: 'multi line doesn\'t have automatic return',
           actual: 'console.log("woohoo");\n`contact_${this.contact_id}`',
-          expected: "function build(_documents, _globals, _inputs, _faker, _chance, _document_index, _require) {\n  function __result(documents, globals, inputs, faker, chance, document_index, require) {\n    console.log(\"woohoo\");\n    \"contact_\" + this.contact_id;\n  }\n  return __result.apply(this, [].slice.call(arguments));\n}",
+          expected: "function build(_documents, _globals, _inputs, _faker, _chance, _document_index, _require) {\n  function __result(documents, globals, inputs, faker, chance, document_index, require) {\n    console.log(\"woohoo\");\n    `contact_${this.contact_id}`;\n  }\n  return __result.apply(this, [].slice.call(arguments));\n}",
         },
         {
           name: 'object deconstruction',
           actual: 'const { countries } = inputs\nreturn `${this.contact_id}${countries[0]}`',
-          expected: "function build(_documents, _globals, _inputs, _faker, _chance, _document_index, _require) {\n  function __result(documents, globals, inputs, faker, chance, document_index, require) {\n    var countries = inputs.countries;\n  \n    return \"\" + this.contact_id + countries[0];\n  }\n  return __result.apply(this, [].slice.call(arguments));\n}",
+          expected: "function build(_documents, _globals, _inputs, _faker, _chance, _document_index, _require) {\n  function __result(documents, globals, inputs, faker, chance, document_index, require) {\n    const {\n      countries\n    } = inputs;\n    return `${this.contact_id}${countries[0]}`;\n  }\n  return __result.apply(this, [].slice.call(arguments));\n}",
         },
       ];
 
@@ -350,7 +350,7 @@ describe('models', () => {
         build: 'cons { countries } = woohoo\nreturn `${this.contact_id}${countries[0]}`',
       };
       const tester = () => parseModelFunctions(actual, babel_config);
-      expect(tester).toThrow(`Failed to transpile build with babel in ${__dirname}\nunknown: Unexpected token, expected ; (2:7)`);
+      expect(tester).toThrow(`Failed to transpile build with babel in ${__dirname}\nunknown: Missing semicolon. (2:6)`);
     });
 
     test('failed to create function', () => {
@@ -377,7 +377,7 @@ describe('models', () => {
         test(`${name} is returned correctly`, () => {
           const stub = tests.map(() => null);
           stub[i] = name;
-          const expected = `function build(_documents, _globals, _inputs, _faker, _chance, _document_index, _require) {\n  function __result(documents, globals, inputs, faker, chance, document_index, require) {\n    return ${name} + "[${i}]";\n  }\n  return __result.apply(this, [].slice.call(arguments));\n}`;  
+          const expected = `function build(_documents, _globals, _inputs, _faker, _chance, _document_index, _require) {\n  function __result(documents, globals, inputs, faker, chance, document_index, require) {\n    return \`\${${name}}[${i}]\`;\n  }\n  return __result.apply(this, [].slice.call(arguments));\n}`;
           let actual = {
             name,
             build: `\`$\{${name}}[${i}]\``

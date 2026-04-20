@@ -1,7 +1,7 @@
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/^message_[a-z0-9-]+$/),
+  _id: is.string().pattern(/^message_[a-z0-9-]+$/),
   doc_type: 'chat-message',
   message_id: is.string().uuid(),
   chat_id: is.string().uuid(),

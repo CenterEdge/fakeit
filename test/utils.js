@@ -1,7 +1,7 @@
 import { test } from '@jest/globals';
 
-var joi = require('joi');
-var to = require('to-js');
+var Joi = require('joi');
+var to = require('../app/to.js');
 to = to.default;
 var p = require('path').join;
 var _ = require('lodash');
@@ -11,6 +11,7 @@ var reduce = require('async-array-methods').reduce;
 var fs = require('fs-extra-promisify');
 var yaml = require('yamljs');
 var json = require('jsondiffpatch');
+var consoleFormatter = require('jsondiffpatch/formatters/console');
 
 /* istanbul ignore next: testing util */
 /// @name models
@@ -124,7 +125,7 @@ module.exports.models = function(settings) {
           }
 
            
-          const schema_keys = schema.isJoi ? _.map(schema._inner.children, 'key') : to.keys(schema);
+          const schema_keys = Joi.isSchema(schema) ? Object.keys(schema.describe().keys || {}) : to.keys(schema);
 
           test(model, function() {  
             var result = cb(model);
@@ -161,26 +162,12 @@ module.exports.models = function(settings) {
                 // validate the object that can be validated
                 function validate(err) {
                   if (err) {
-                    var segments = err.message.match(/(?:child\s+(?:"))([^"]+)(?:")/g);
-                    if (segments) {
-                      segments = segments.map(function(segment) {
-                        return segment.replace(/child\s+|"/g, '');
-                      });
-                      var item_path = segments.join('.');
-                      var item = _.get(picked, item_path);
-                      if (item) {
-                        console.log('   ', item_path, '=', item);
-                      } else {
-                        console.log('   path:', item_path);
-                      }
-                    }
                     throw new Error(`${model} isn't valid ${err.message}`);
                   }
                 };
-                if (schema.isJoi) {
-                  schema.validate(picked, validate);
-                } else {
-                  joi.validate(picked, schema, validate);
+                if (Joi.isSchema(schema)) {
+                  const { error } = schema.validate(picked);
+                  validate(error);
                 }
               });
           });
@@ -245,7 +232,7 @@ module.exports.getPaths = function getPaths(model, regex) {
 module.exports.checkDiff = function checkDiff(actual, expected) {
   const delta = json.diff(actual, expected);
   const spaces = '  ';
-  const diff = json.formatters.console.format(delta).split('\n').map((line) => spaces + spaces + line).join('\n');
+  const diff = consoleFormatter.format(delta).split('\n').map((line) => spaces + spaces + line).join('\n');
   if (!diff.trim()) {
     return '';
   }
@@ -253,13 +240,13 @@ module.exports.checkDiff = function checkDiff(actual, expected) {
 };
 
 /* istanbul ignore next: testing util */
-module.exports.phone = joi.string().regex(/[0-9()\-\s.]+/);
+module.exports.phone = Joi.string().pattern(/[0-9()\-\s.]+/);
 
 /* istanbul ignore next: testing util */
-module.exports.postal_code = joi.string().regex(/^[0-9]{5}(?:-[0-9]{4})?$/).min(5).max(10);
+module.exports.postal_code = Joi.string().pattern(/^[0-9]{5}(?:-[0-9]{4})?$/).min(5).max(10);
 
 /* istanbul ignore next: testing util */
-module.exports.slug = joi.string().regex(/^[a-z][a-z-]+[a-z]$/);
+module.exports.slug = Joi.string().pattern(/^[a-z][a-z-]+[a-z]$/);
 
 /* istanbul ignore next: testing util */
 module.exports.check = function check(type, description, data) {
@@ -274,7 +261,7 @@ module.exports.check = function check(type, description, data) {
     result.description = description;
   }
 
-  result.data = joi.object(data);
+  result.data = Joi.object(data);
 
-  return joi.object(result);
+  return Joi.object(result);
 };

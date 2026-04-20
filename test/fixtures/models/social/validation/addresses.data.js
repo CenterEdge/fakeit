@@ -2,7 +2,7 @@ var utils = require('../../../../utils.js');
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/address_[a-z0-9]+/),
+  _id: is.string().pattern(/address_[a-z0-9]+/),
   doc_type: 'address',
   address_id: is.string().uuid(),
   user_id: is.number(),

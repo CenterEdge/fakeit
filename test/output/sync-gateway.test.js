@@ -1,14 +1,16 @@
  
-import to from 'to-js';
+import to from '../../app/to.js';
 import default_options from '../../app/output/default-options';
 
-jest.mock('request', () => {
-  const req = jest.requireActual('request');
-  const mockRequest = (options, callback) => {
-    callback(null, { headers: { 'set-cookie': true } }, { ok: true });
-  };
-  return Object.assign(mockRequest, req);
-});
+// Mock the global fetch used by sync-gateway
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    text: () => Promise.resolve(JSON.stringify({ ok: true })),
+    headers: {
+      get: (name) => name === 'set-cookie' ? null : null,
+    },
+  })
+);
 
 import SyncGateway, { request } from '../../app/output/sync-gateway';
 
@@ -72,15 +74,14 @@ describe('output:sync-gateway', () => {
     test.todo('output test');
   });
 
-  // this is just calling another library and it's just converting
-  // it's callback style to a promise style so we just need to ensure
-  // it's a promise.
+  // this is just calling another library (fetch) and it's just converting
+  // it to a promise that resolves with [response, bodyText]
   test('request', async () => {
-    let actual = request('localhost:3000');
+    let actual = request({ url: 'http://localhost:3000' });
     expect(typeof actual.then).toBe('function');
     actual = await actual;
     expect(to.type(actual)).toBe('array');
     expect(to.type(actual[0])).toBe('object');
-    expect(to.type(actual[1])).toBe('object');
+    expect(to.type(actual[1])).toBe('string');
   });
 });

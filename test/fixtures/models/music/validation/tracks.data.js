@@ -1,15 +1,15 @@
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/track_[A-Z0-9]+/).length(46),
+  _id: is.string().pattern(/track_[A-Z0-9]+/).length(46),
   type: 'track',
-  id: is.string().regex(/[A-Z0-9]+/).length(40),
+  id: is.string().pattern(/[A-Z0-9]+/).length(40),
   created: is.date().iso(),
   updated: is.date().iso(),
   artist: is.string(),
   title: is.string(),
-  mp3: is.string().uri().regex(/.*\/(?:files|audio|mp3|downloads)\/.+\.mp3$/),
-  genre: is.string().regex(/^[–\-a-zA-Z/'&\s28:,éí]+$/).min(3).max(39),
+  mp3: is.string().uri().pattern(/.*\/(?:files|audio|mp3|downloads)\/.+\.mp3$/),
+  genre: is.string().pattern(/^[–\-a-zA-Z/'&\s28:,éí]+$/).min(3).max(39),
   ratings: is.array()
     .items({
       created: is.date().iso(),
@@ -18,5 +18,5 @@ module.exports = is.object({
     })
     .min(0)
     .max(12)
-    .sparse(false),
+    ,
 });

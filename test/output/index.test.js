@@ -5,7 +5,7 @@ import { stripColor } from 'chalk';
 import fs from 'fs-extra-promisify';
 import { map, reduce } from 'async-array-methods';
 import globby from 'globby';
-import to from 'to-js';
+import to from '../../app/to.js';
 import { startCapturing, stopCapturing } from '../console';
 import { fail } from 'assert';
 

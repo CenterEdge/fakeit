@@ -10,7 +10,7 @@ import {
 } from '../app/utils';
 import { startCapturing, stopCapturing } from './console';
 import { map } from 'async-array-methods';
-import to from 'to-js';
+import to from '../app/to.js';
 import AdmZip from 'adm-zip';
 import _ from 'lodash';
 

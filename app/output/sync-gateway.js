@@ -1,8 +1,7 @@
 import { extend } from 'lodash';
 import default_options from './default-options';
 import Base from '../base';
-import to from 'to-js';
-import req from 'request';
+import to from '../to.js';
 import cookieParser from 'set-cookie-parser';
 
 /// @name SyncGateway
@@ -68,12 +67,13 @@ export default class SyncGateway extends Base {
 
         if (
           body.ok &&
-          res.headers['set-cookie']
+          res.headers.get('set-cookie')
         ) {
-          const cookie = cookieParser.parse(res);
+          const cookies = cookieParser.parse(res.headers.get('set-cookie') || '');
+          const cookie = cookies[0];
           this.session = {
-            name: cookie[0].name,
-            id: cookie[0].value,
+            name: cookie.name,
+            id: cookie.value,
           };
         } else if (body.error) {
           return this.log('error', body.error);
@@ -113,10 +113,7 @@ export default class SyncGateway extends Base {
 
     // if there is a an authenticated sync session use it
     if (this.session) {
-      const jar = req.jar();
-      const cookie = req.cookie(`${this.session.name}=${this.session.id}`);
-      jar.setCookie(cookie, server);
-      options.jar = jar;
+      options.headers['Cookie'] = `${this.session.name}=${this.session.id}`;
     }
 
     const body = to.object((await request(options))[1]);
@@ -133,16 +130,13 @@ export default class SyncGateway extends Base {
 
 /// @name request
 /// @description
-/// This converts the call back style of `request` to be a promise style
-/// @arg {object} options - The options to pass onto the `request` function
-/// @returns {array} - The first item in the array is the `res`, and the second item is the `body` response.
+/// Wraps the built-in fetch API to match the previous request-module interface.
+/// Resolves with [response, bodyText] so callers can destructure identically.
+/// @arg {object} options - { url, method, headers, body }
+/// @returns {Promise<[Response, string]>}
 /// @async
-export function request(options = {}) {
-  return new Promise((resolve, reject) => {
-    req(options, (err, res, body) => {
-      /* istanbul ignore next : to hard to mock test */
-      if (err) return reject(err);
-      resolve([ res, body ]);
-    });
-  });
+export async function request({ url, method = 'GET', headers = {}, body } = {}) {
+  const res = await fetch(url, { method, headers, body });
+  const text = await res.text();
+  return [ res, text ];
 }

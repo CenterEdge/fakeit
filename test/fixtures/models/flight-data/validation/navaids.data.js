@@ -1,7 +1,7 @@
 var is = require('joi');
 
 module.exports = is.object({
-  _id: is.string().regex(/^navaid_[0-9]+$/),
+  _id: is.string().pattern(/^navaid_[0-9]+$/),
   navaid_id: is.number().min(0),
   doc_type: 'navaid',
   navaid_ident: [ is.string().uppercase(), null ],
@@ -16,7 +16,7 @@ module.exports = is.object({
   iso_country: is.string().uppercase(),
   dme: {
     frequency_khz: [ is.number(), null ],
-    channel: [ is.string().regex(/^[A-Z0-9]+$/), null ],
+    channel: [ is.string().pattern(/^[A-Z0-9]+$/), null ],
     latitude: [ is.number(), null ],
     longitude: [ is.number(), null ],
     elevation: [ is.number(), null ],

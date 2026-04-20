@@ -4,7 +4,7 @@
 
 import path from 'path';
 import { extend, mean, uniqueId } from 'lodash';
-import to, { is } from 'to-js';
+import to, { is } from '../to.js';
 import Base from '../base';
 import { parsers, pool } from '../utils';
 import default_options from './default-options';

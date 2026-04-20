@@ -7,7 +7,7 @@
 import path from 'path';
 import globby from 'globby';
 import { map } from 'async-array-methods';
-import to, { is } from 'to-js';
+import to, { is } from './to.js';
 import AdmZip from 'adm-zip';
 import promisify from 'es6-promisify';
 import fs from 'fs-extra-promisify';

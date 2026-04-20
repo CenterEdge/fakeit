@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach } from '@jest/globals';
 import Logger from '../app/logger';
-import to from 'to-js';
+import to from '../app/to.js';
 import { stripColor } from 'chalk';
 import { PassThrough as PassThroughStream } from 'stream';
 import _ from 'lodash';
