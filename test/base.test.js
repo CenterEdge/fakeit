@@ -1,6 +1,9 @@
 import { describe, expect, test } from '@jest/globals';
-import { join as p } from 'path';
+import { join as pjoin } from 'path';
 import Base from '../app/base';
+
+// Normalize to forward slashes to match resolvePaths output (consistent with globby on all platforms)
+const p = (...args) => pjoin(...args).replace(/\\/g, '/');
 
 test('without args', () => {
   const base = new Base();

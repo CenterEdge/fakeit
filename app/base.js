@@ -46,10 +46,9 @@ export default class Base extends Logger {
       .split(/\s*(?:,| )\s*/)
       .filter(Boolean)
       .map((file) => {
-        if (path.isAbsolute(file)) {
-          return file;
-        }
-        return path.join(root, file);
+        const resolved = path.isAbsolute(file) ? file : path.join(root, file);
+        // Normalize to forward slashes so paths match globby output on all platforms
+        return resolved.replace(/\\/g, '/');
       });
   }
 }

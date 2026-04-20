@@ -148,7 +148,8 @@ export default class Models extends Base {
       model.file = file;
 
       // sets the root of the model so that we can resolve inputs and dependencies later
-      model.root = path.resolve(this.options.root, path.dirname(model.file));
+      // Normalize to forward slashes so it is consistent with globby output on all platforms
+      model.root = path.resolve(this.options.root, path.dirname(model.file)).replace(/\\/g, '/');
 
       // used to determine if something is a dependency or not.
       if (model.is_dependency == null) {
