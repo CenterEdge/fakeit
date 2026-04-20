@@ -22,6 +22,20 @@ npm install @centeredgesoft/fakeit --save-dev
 npm install @centeredgesoft/fakeit --global
 ```
 
+## Docker
+
+Prebuilt images are published to Docker Hub as [`centeredge/fakeit`](https://hub.docker.com/r/centeredge/fakeit).
+
+```bash
+docker run --rm centeredge/fakeit --help
+```
+
+To run against local models, mount your working directory:
+
+```bash
+docker run --rm -v "$PWD:/work" -w /work centeredge/fakeit console ./models/*.yaml
+```
+
 ## CLI Usage
 
 ```bash
