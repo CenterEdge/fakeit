@@ -62,6 +62,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: centeredge/fakeit
+          # Keep semver tags without the leading `v` (e.g. 2.0.0, 2.0).
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -81,8 +82,8 @@ jobs:
           annotations: ${{ steps.meta.outputs.annotations }}
           provenance: true
           sbom: true
-          cache-to: type=inline
-          cache-from: type=registry,ref=centeredge/fakeit:main
+          cache-to: type=gha,mode=max
+          cache-from: type=gha
 
   publish:
     name: Publish to NPM
