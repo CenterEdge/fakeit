@@ -11,7 +11,7 @@
     "build": "babel app --out-dir dist",
     "lint": "eslint",
     "test": "jest",
-    "watch": "make build -- --watch"
+    "watch": "npm run build -- --watch"
   },
   "bin": {
     "fakeit": "bin/fakeit"
