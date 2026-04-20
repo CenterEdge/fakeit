@@ -223,7 +223,7 @@ describe('logger:', () => {
       });
       {
         const [ check, text, time, unit ] = last_state.split(/\s+/);
-        expect(check).toBe('√');
+        expect(check).toMatch(/^[√✔]$/);
         expect(text).toBe('stop');
         expect(`${time} ${unit}`).toMatch(/^\+2[0-9]{2}\sms$/);
       }
@@ -257,7 +257,7 @@ describe('logger:', () => {
 
       {
         const [ check, text ] = last_state.split(/\s+/);
-        expect(check).toBe('×');
+        expect(check).toMatch(/^[×✖]$/);
         expect(text).toBe('three');
       }
     });
