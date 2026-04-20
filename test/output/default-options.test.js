@@ -10,7 +10,7 @@ describe('output:default-options', () => {
       limit: 10,
       highlight: true,
       archive: '',
-      server: '127.0.0.1',
+      server: 'couchbase://127.0.0.1',
       bucket: 'default',
       username: '',
       password: '',

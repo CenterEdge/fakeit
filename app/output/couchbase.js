@@ -1,7 +1,7 @@
 import { extend } from 'lodash';
 import default_options from './default-options';
 import Base from '../base';
-import couchbase from 'couchbase-promises';
+import { connect as couchbaseConnect } from 'couchbase';
 
 
 /// @name Couchbase
@@ -14,16 +14,6 @@ export default class Couchbase extends Base {
   constructor(options = {}, output_options = {}) {
     super(options);
     this.output_options = extend({}, default_options, output_options);
-
-    this.cluster = new couchbase.Cluster(this.output_options.server);
-
-    const { username, password } = this.output_options;
-    if (username || password) {
-      this.cluster.authenticate({
-        username: username || '',
-        password: password || ''
-      });
-    }
 
     this.prepared = false;
   }
@@ -52,23 +42,24 @@ export default class Couchbase extends Base {
       return this.prepare();
     }
 
-    const { server, bucket, timeout } = this.output_options;
-    return new Promise((resolve, reject) => {
-      this.bucket = this.cluster.openBucket(bucket, (err) => {
-        /* istanbul ignore if : to hard to test since this is a third party function */
-        if (err) return reject(err);
+    const { server, bucket, username, password, timeout } = this.output_options;
 
-        this.log('verbose', `Connection to '${bucket}' bucket at '${server}' was successful`);
+    const connectOptions = {
+      username: username || '',
+      password: password || '',
+    };
 
-        if (timeout) {
-          this.bucket.operationTimeout = timeout;
-        }
+    if (timeout) {
+      connectOptions.timeouts = { kvTimeout: timeout };
+    }
 
-        this.prepared = true;
-        this.bucket.connected = true;
-        resolve();
-      });
-    });
+    this.cluster = await couchbaseConnect(server, connectOptions);
+    this.collection = this.cluster.bucket(bucket).defaultCollection();
+
+    this.log('verbose', `Connection to '${bucket}' bucket at '${server}' was successful`);
+
+    this.prepared = true;
+    this.connected = true;
   }
 
   ///# @name output
@@ -86,7 +77,7 @@ export default class Couchbase extends Base {
     }
 
     // upserts a document into couchbase
-    return this.bucket.upsertAsync(id, data);
+    return this.collection.upsert(id, data);
   }
 
   ///# @name finalize
@@ -94,9 +85,9 @@ export default class Couchbase extends Base {
   ///# This disconnect from couchbase if it's connected
   ///# @async
   async finalize() {
-    if ((this.bucket || {}).connected) {
-      await this.bucket.disconnect();
-      this.bucket.connected = false;
+    if (this.connected) {
+      await this.cluster.close();
+      this.connected = false;
     }
   }
 }

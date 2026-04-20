@@ -1,18 +1,22 @@
-jest.mock('couchbase-promises', () => {
-  class MockBucket {
+jest.mock('couchbase', () => {
+  class MockCollection {
     constructor() {
       this._store = {};
-      this.operationTimeout = 5000;
     }
-    upsertAsync(id, data) {
+    async upsert(id, data) {
       this._store[id] = data;
-      return Promise.resolve();
     }
-    getAsync(id) {
-      return Promise.resolve({ value: this._store[id] });
+    async get(id) {
+      return { value: this._store[id] };
     }
-    disconnect() {
-      return Promise.resolve();
+  }
+
+  class MockBucket {
+    constructor() {
+      this._collection = new MockCollection();
+    }
+    defaultCollection() {
+      return this._collection;
     }
   }
 
@@ -20,26 +24,23 @@ jest.mock('couchbase-promises', () => {
     constructor() {
       this._buckets = {};
     }
-    authenticate() {}
-    openBucket(name, callback) {
+    bucket(name) {
       if (!this._buckets[name]) {
         this._buckets[name] = new MockBucket();
       }
-      const bucket = this._buckets[name];
-      process.nextTick(() => {
-        callback(null);
-      });
-      return bucket;
+      return this._buckets[name];
     }
+    async close() {}
   }
 
-  const mock = { Cluster: MockCluster, Mock: { Cluster: MockCluster } };
-  mock.default = mock;
-  return mock;
+  return {
+    connect: async () => new MockCluster(),
+    Mock: { Cluster: MockCluster },
+    __esModule: true,
+  };
 });
 
 import Couchbase from '../../app/output/couchbase';
-import couchbase from 'couchbase-promises';
 import default_options from '../../app/output/default-options';
 import to from 'to-js';
 
@@ -48,10 +49,6 @@ describe('output:couchbase', () => {
 
   beforeEach(() => {
     context = new Couchbase();
-    // this replaces the original cluster with the mock cluster that doesn't require
-    // an actual server to be running, this way it's easy to test the functionality
-    // of our functions and not couchbases functions.
-    context.cluster = new couchbase.Mock.Cluster(context.output_options.server);
   });
 
   test('without args', () => {
@@ -59,7 +56,6 @@ describe('output:couchbase', () => {
     expect(context.prepared).toBe(false);
     expect(typeof context.prepare).toBe('function');
     expect(typeof context.output).toBe('function');
-    expect(context.cluster.constructor.name).toBe('MockCluster');
   });
 
   test('prepare', async () => {
@@ -70,8 +66,8 @@ describe('output:couchbase', () => {
     expect(context.prepared).toBe(false);
     await preparing;
     expect(context.prepared).toBe(true);
-    expect(to.type(context.bucket)).toBe('object');
-    expect(context.bucket.connected).toBe(true);
+    expect(to.type(context.collection)).toBe('object');
+    expect(context.connected).toBe(true);
   });
 
   describe('setup', () => {
@@ -83,8 +79,8 @@ describe('output:couchbase', () => {
       expect(context.prepared).toBe(false);
       expect(await preparing).toBeFalsy();
       expect(context.prepared).toBe(true);
-      expect(to.type(context.bucket)).toBe('object');
-      expect(context.bucket.connected).toBe(true);
+      expect(to.type(context.collection)).toBe('object');
+      expect(context.connected).toBe(true);
     });
   });
 
@@ -165,7 +161,7 @@ describe('output:couchbase', () => {
         const id = `1234567890-${language}`;
         context.output_options.format = language;
         await context.output(id, data);
-        const document = await context.bucket.getAsync(id);
+        const document = await context.collection.get(id);
         expect(document).not.toBe(null);
         expect(document.value).toEqual(data);
       });
@@ -179,7 +175,7 @@ describe('output:couchbase', () => {
       context.output_options.format = language;
       context.prepare();
       await context.output(id, data);
-      const document = await context.bucket.getAsync(id);
+      const document = await context.collection.get(id);
       expect(document).not.toBe(null);
       expect(document.value).toEqual(data);
     });
@@ -188,7 +184,7 @@ describe('output:couchbase', () => {
   describe('finalize', () => {
     test('do nothing because prepare wasn\'t called before finalize', async () => {
       await context.finalize();
-      expect(context.bucket).toBe(undefined);
+      expect(context.cluster).toBe(undefined);
       expect(context.prepared).toBe(false);
       expect(context.preparing).toBe(undefined);
     });
@@ -196,15 +192,15 @@ describe('output:couchbase', () => {
     test('disconnected', async () => {
       context.output_options.bucket = 'finalize';
       await context.prepare();
-      expect(to.type(context.bucket)).toBe('object');
+      expect(to.type(context.collection)).toBe('object');
       expect(context.prepared).toBe(true);
       expect(typeof context.preparing.then).toBe('function');
-      expect(context.bucket.connected).toBe(true);
+      expect(context.connected).toBe(true);
       await context.finalize();
-      expect(to.type(context.bucket)).toBe('object');
+      expect(to.type(context.collection)).toBe('object');
       expect(context.prepared).toBe(true);
       expect(typeof context.preparing.then).toBe('function');
-      expect(context.bucket.connected).toBe(false);
+      expect(context.connected).toBe(false);
     });
   });
 });

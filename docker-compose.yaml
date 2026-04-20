@@ -1,18 +1,14 @@
-version: '3'
 services:
   couchbase:
-    image: bentonam/couchbase-docker:enterprise-5.0.1
+    image: btburnett3/couchbase-quickinit:enterprise-7.6.3
     container_name: fakeit-couchbase
     ports:
       - "8091-8094:8091-8094"
       - "11210:11210"
     environment:
-      NODE_TYPE: DEFAULT
-      CLUSTER_USERNAME: Administrator
-      CLUSTER_PASSWORD: password
-      CLUSTER_NAME: FakeIt Cluster
-      SERVICES: data,query,index,fts
-      CLUSTER_RAMSIZE: 500
-      BUCKET: testing
-      BUCKET_RAMSIZE: 500
-      ENABLE_FLUSH: 1
+      CB_USERNAME: Administrator
+      CB_PASSWORD: password
+      CB_CLUSTER_NAME: FakeIt Cluster
+      CB_SERVICES: kv,n1ql,index,fts
+    volumes:
+      - ./buckets.json:/startup/buckets.json:ro

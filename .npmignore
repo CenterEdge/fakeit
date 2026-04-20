@@ -11,3 +11,5 @@ babel.config.json
 .travis.yaml
 docsfile.js
 jest.config.js
+docker-compose.yaml
+buckets.json

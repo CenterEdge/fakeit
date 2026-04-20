@@ -34,7 +34,7 @@ describe('output:', () => {
       output: 'return',
       limit: 10,
       highlight: true,
-      server: '127.0.0.1',
+      server: 'couchbase://127.0.0.1',
       bucket: 'default',
       password: '',
       username: '',

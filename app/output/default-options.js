@@ -29,7 +29,7 @@ module.exports = {
 
   // These options are used if the `output` option is `sync-gateway`,
   // or `couchbase`. Otherwise they're ignored.
-  server: '127.0.0.1', // the server address to use for the server
+  server: 'couchbase://127.0.0.1', // the server address to use for the server
   bucket: 'default', // the bucket name
   username: '', // the username to use if applicable
   password: '', // the password for the account if applicable
