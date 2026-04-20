@@ -2,13 +2,7 @@
 
 Utility that generates fake data in `json`, `yaml`, `yml`, `cson`, or `csv` formats based on models which are defined in `yaml`.  Data can be generated using any combination of [FakerJS](http://marak.github.io/faker.js), [ChanceJS](http://chancejs.com), or Custom Functions.
 
-[![Build Status](https://img.shields.io/travis/bentonam/fakeit.svg)](https://travis-ci.org/bentonam/fakeit)
-[![Coverage Status](https://img.shields.io/coveralls/bentonam/fakeit/master.svg)](https://coveralls.io/github/bentonam/fakeit?branch=master)
-
-[![Dependency Status](https://img.shields.io/david/bentonam/fakeit.svg?maxAge=2592000&style=flat-square)](https://david-dm.org/bentonam/fakeit)
-[![devDependency Status](https://img.shields.io/david/dev/bentonam/fakeit.svg?maxAge=2592000&style=flat-square)](https://david-dm.org/bentonam/fakeit#info=devDependencies)
-
-![Example of how it works](https://raw.githubusercontent.com/bentonam/fakeit/master/assets/example.gif)
+![Example of how it works](https://raw.githubusercontent.com/CenterEdge/fakeit/master/assets/example.gif)
 
 Generated data can be output in the following formats and destinations:
   - `json`
@@ -23,9 +17,9 @@ Generated data can be output in the following formats and destinations:
 ## Install
 
 ```bash
-npm install fakeit --save-dev
+npm install @centeredgesoft/fakeit --save-dev
 # or
-npm install fakeit --global
+npm install @centeredgesoft/fakeit --global
 ```
 
 ## CLI Usage
@@ -639,14 +633,3 @@ fakeit.generate(models, {
 ### Examples
 
 To see more examples of some of the things you can do take a look at the [test cases](https://github.com/bentonam/fakeit/tree/master/test/fixtures/models) that are in this repo
-
-
-### Changelog
-
-  - Model Dependencies are now defined in the model it's self by the file path to the model that the current one depends on. It doesn't matter what order they're because they will be resolve automagically.
-  - Model Inputs are now defined in the model it's self by the file path to the inputs location that the current model depends on. It can be a string or an object.
-  - Babel +6 support now exists. We don't install any presets or plugins for you but if `.babelrc` or `babelConfig` exists in the `package.json` of your project then all the functions are transpiled.
-  - Better error handling has been added so you know what went wrong and where it happened.
-  - JS support has also been added so you are no longer required to use the command line to create fake data.
-  - Added support for seeds to allow repeatable data.
-  - Added a progress indicator to show how many documents have been created
