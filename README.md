@@ -22,6 +22,20 @@ npm install @centeredgesoft/fakeit --save-dev
 npm install @centeredgesoft/fakeit --global
 ```
 
+## Docker
+
+Prebuilt images are published to GitHub Container Registry as [`ghcr.io/centeredge/fakeit`](https://github.com/CenterEdge/fakeit/pkgs/container/fakeit).
+
+```bash
+docker run --rm ghcr.io/centeredge/fakeit --help
+```
+
+To run against local models, mount your working directory:
+
+```bash
+docker run --rm -v "$PWD:/work" -w /work ghcr.io/centeredge/fakeit console ./models/*.yaml
+```
+
 ## CLI Usage
 
 ```bash
