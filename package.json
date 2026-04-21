@@ -19,10 +19,10 @@
   "main": "dist/index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/centeredge/fakeit.git"
+    "url": "git+https://github.com/CenterEdge/fakeit.git"
   },
   "bugs": {
-    "url": "https://github.com/centeredge/fakeit/issues"
+    "url": "https://github.com/CenterEdge/fakeit/issues"
   },
   "engines": {
     "node": ">=20"
@@ -45,7 +45,7 @@
     "sync-gateway"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/centeredge/fakeit#readme",
+  "homepage": "https://github.com/CenterEdge/fakeit#readme",
   "dependencies": {
     "adm-zip": "^0.4.7",
     "async-array-methods": "^2.1.0",
